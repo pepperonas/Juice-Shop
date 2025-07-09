@@ -127,7 +127,9 @@ try {
 }
 ```
 
-// === METHODE 3: DOM-basierte Suche ===
+### 🔍 METHODE 3: DOM-basierte Suche
+
+```javascript
 console.log('\n=== DOM-BASED SEARCH ===');
 
 // Suche in der gesamten HTML-Quelle
@@ -135,29 +137,32 @@ const htmlSource = document.documentElement.outerHTML;
 
 // Verschiedene Patterns für Routen-Hinweise
 const domPatterns = [
-/#\/[a-zA-Z0-9\-_]+/g,
-/href=['"][^'"]*['"]/g,
-/ng-href=['"][^'"]*['"]/g,
-/ui-sref=['"][^'"]*['"]/g
+    /#\/[a-zA-Z0-9\-_]+/g,           // Hash-basierte Routen
+    /href=['"][^'"]*['"]/g,         // Standard href Attribute
+    /ng-href=['"][^'"]*['"]/g,      // Angular ng-href
+    /ui-sref=['"][^'"]*['"]/g       // UI-Router Referenzen
 ];
 
 domPatterns.forEach((pattern, index) => {
-const matches = htmlSource.match(pattern);
-if (matches) {
-const uniqueMatches = [...new Set(matches)];
-console.log(`DOM Pattern ${index}:`, uniqueMatches.slice(0, 10)); // Zeige nur erste 10
-}
+    const matches = htmlSource.match(pattern);
+    if (matches) {
+        const uniqueMatches = [...new Set(matches)];
+        console.log(`DOM Pattern ${index}:`, uniqueMatches.slice(0, 10)); // Zeige nur erste 10
+    }
 });
 
 // Suche nach spezifischen Strings im DOM
 const searchTerms = ['administration', 'admin', 'dashboard', 'panel', 'score-board'];
 searchTerms.forEach(term => {
-if (htmlSource.toLowerCase().includes(term)) {
-console.log(`✅ Found "${term}" in DOM`);
-}
+    if (htmlSource.toLowerCase().includes(term)) {
+        console.log(`✅ Found "${term}" in DOM`);
+    }
 });
+```
 
-// === METHODE 4: Navigation Element Analysis ===
+### 🔍 METHODE 4: Navigation Element Analysis
+
+```javascript
 console.log('\n=== NAVIGATION ANALYSIS ===');
 
 // Finde alle Links und Navigation
@@ -165,66 +170,74 @@ const navElements = document.querySelectorAll('a, [ng-click], [ui-sref]');
 console.log(`Found ${navElements.length} navigation elements`);
 
 navElements.forEach((element, index) => {
-const href = element.getAttribute('href');
-const ngClick = element.getAttribute('ng-click');
-const uiSref = element.getAttribute('ui-sref');
+    const href = element.getAttribute('href');
+    const ngClick = element.getAttribute('ng-click');
+    const uiSref = element.getAttribute('ui-sref');
 
-if (href && (href.includes('admin') || href.includes('#/'))) {
-console.log(`Nav ${index} href:`, href);
-}
-if (ngClick && ngClick.includes('admin')) {
-console.log(`Nav ${index} ng-click:`, ngClick);
-}
-if (uiSref) {
-console.log(`Nav ${index} ui-sref:`, uiSref);
-}
+    if (href && (href.includes('admin') || href.includes('#/'))) {
+        console.log(`Nav ${index} href:`, href);
+    }
+    if (ngClick && ngClick.includes('admin')) {
+        console.log(`Nav ${index} ng-click:`, ngClick);
+    }
+    if (uiSref) {
+        console.log(`Nav ${index} ui-sref:`, uiSref);
+    }
 });
+```
 
-// === METHODE 5: Manual Testing der häufigsten Admin-Routen ===
+### 🔍 METHODE 5: Manual Testing der häufigsten Admin-Routen
+
+```javascript
 console.log('\n=== MANUAL ROUTE TESTING ===');
 
 const commonAdminRoutes = [
-'/#/admin',
-'/#/administration',
-'/#/administrator',
-'/#/dashboard',
-'/#/panel',
-'/#/backend',
-'/#/manage',
-'/#/control',
-'/#/score-board',
-'/#/config',
-'/#/settings'
+    '/#/admin',
+    '/#/administration',
+    '/#/administrator',
+    '/#/dashboard',
+    '/#/panel',
+    '/#/backend',
+    '/#/manage',
+    '/#/control',
+    '/#/score-board',
+    '/#/config',
+    '/#/settings'
 ];
 
 console.log('🧪 Test these routes manually:');
 commonAdminRoutes.forEach(route => {
-console.log(`🔗 http://localhost:3000${route}`);
+    console.log(`🔗 http://localhost:3000${route}`);
 });
+```
 
-// === METHODE 6: API Endpoint Discovery ===
+### 🔍 METHODE 6: API Endpoint Discovery
+
+```javascript
 console.log('\n=== API ENDPOINT DISCOVERY ===');
 
 // Suche nach API-Endpunkten in JavaScript
 fetch('http://localhost:3000/main.js')
 .then(response => response.text())
 .then(code => {
-const apiPatterns = [
-/\/api\/[^'"]+/g,
-/\/rest\/[^'"]+/g,
-/http[s]?:\/\/[^'"]+/g
-];
+    const apiPatterns = [
+        /\/api\/[^'"]+/g,      // API Endpoints
+        /\/rest\/[^'"]+/g,     // REST Endpoints
+        /http[s]?:\/\/[^'"]+/g // Externe URLs
+    ];
 
     apiPatterns.forEach((pattern, index) => {
-      const matches = code.match(pattern);
-      if (matches) {
-        console.log(`API Pattern ${index}:`, [...new Set(matches)].slice(0, 10));
-      }
+        const matches = code.match(pattern);
+        if (matches) {
+            console.log(`API Pattern ${index}:`, [...new Set(matches)].slice(0, 10));
+        }
     });
-
 });
+```
 
-// === METHODE 7: Local Storage & Session Storage Inspection ===
+### 🔍 METHODE 7: Local Storage & Session Storage Inspection
+
+```javascript
 console.log('\n=== STORAGE INSPECTION ===');
 
 // Schaue was bereits im Storage ist
@@ -233,20 +246,24 @@ console.log('SessionStorage keys:', Object.keys(sessionStorage));
 
 // Prüfe auf Token oder Route-Informationen
 Object.keys(localStorage).forEach(key => {
-const value = localStorage.getItem(key);
-if (value.includes('admin') || value.includes('route')) {
-console.log(`Storage ${key}:`, value);
-}
+    const value = localStorage.getItem(key);
+    if (value.includes('admin') || value.includes('route')) {
+        console.log(`Storage ${key}:`, value);
+    }
 });
+```
 
-// === METHODE 8: Console.log alle verfügbaren Objekte ===
+### 🔍 METHODE 8: Angular-spezifische Objekte im Window
+
+```javascript
 console.log('\n=== AVAILABLE OBJECTS ===');
 console.log('Window object keys containing "ng" or "angular":',
-Object.keys(window).filter(key =>
-key.toLowerCase().includes('ng') ||
-key.toLowerCase().includes('angular')
-)
+    Object.keys(window).filter(key =>
+        key.toLowerCase().includes('ng') ||
+        key.toLowerCase().includes('angular')
+    )
 );
+```
 ### 📊 Ergebnisse der Route Discovery
 
 Die Ausführung der obigen Scripts lieferte folgende Ergebnisse:
