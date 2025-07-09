@@ -453,10 +453,106 @@ EOF
 mv test.xml test.pdf
 ```
 
+### 🛠️ Methode 4: Unicode + URL-Encoding Bypass
+
+```javascript
+// Spezielle Unicode-Zeichen in Dateinamen verwenden
+const unicodeFilename = "ᓚᘏᗢ-#zatschi-#whoneedsfourlegs-1572600969477.jpg";
+console.log('Original Filename:', unicodeFilename);
+
+// URL-Encoding anwenden
+const encodedFilename = encodeURIComponent(unicodeFilename);
+console.log('URL-Encoded:', encodedFilename);
+// Ergebnis: %E1%93%9A%E1%98%8F%E1%97%A2-%23zatschi-%23whoneedsfourlegs-1572600969477.jpg
+```
+
+### 📝 Manuelle URL-Encoding Methode
+
+```bash
+# Original Dateiname mit Unicode-Zeichen
+echo "ᓚᘏᗢ-#zatschi-#whoneedsfourlegs-1572600969477.jpg"
+
+# URL-Encoded Version für Upload
+echo "%E1%93%9A%E1%98%8F%E1%97%A2-%23zatschi-%23whoneedsfourlegs-1572600969477.jpg"
+```
+
+### 🔍 Exploit-Workflow
+
+```javascript
+// 1. Erstelle Datei mit Unicode-Namen
+function createUnicodeBypass() {
+    const originalName = "ᓚᘏᗢ-#zatschi-#whoneedsfourlegs-1572600969477.jpg";
+    const encodedName = "%E1%93%9A%E1%98%8F%E1%97%A2-%23zatschi-%23whoneedsfourlegs-1572600969477.jpg";
+    
+    console.log('🎯 Unicode File Upload Bypass:');
+    console.log('Original:', originalName);
+    console.log('Encoded:', encodedName);
+    
+    // 2. Verwende den encoded Namen beim File Upload
+    // Dies kann Filter umgehen, die nur ASCII-Zeichen erwarten
+    return encodedName;
+}
+
+// 3. Upload-Simulation
+function simulateUpload() {
+    const filename = createUnicodeBypass();
+    
+    // Simuliere FormData für File Upload
+    console.log('📤 Uploading file with name:', filename);
+    console.log('🔓 Bypass reason: Unicode + Special chars + URL encoding');
+}
+
+simulateUpload();
+```
+
+### 💡 Warum funktioniert dieser Bypass?
+
+1. **Unicode-Zeichen**: `ᓚᘏᗢ` (Kanadische Silbenschrift) verwirrt Parser
+2. **Sonderzeichen**: `#` kann als Fragment-Identifier interpretiert werden
+3. **URL-Encoding**: Versteckt die wahre Struktur des Dateinamens
+4. **Lange Timestamps**: `1572600969477` (Unix-Timestamp) kann Buffer-Checks umgehen
+5. **Mixed Content**: Kombination aus Unicode, ASCII und Zahlen
+
+### 🔍 Technische Analyse
+
+```javascript
+// Dekodierung des Unicode-Strings
+function analyzeUnicodeBypass() {
+    const encoded = "%E1%93%9A%E1%98%8F%E1%97%A2-%23zatschi-%23whoneedsfourlegs-1572600969477.jpg";
+    const decoded = decodeURIComponent(encoded);
+    
+    console.log('🔬 Unicode Analysis:');
+    console.log('ᓚ = U+14DA (Canadian Syllabics LA)');
+    console.log('ᘏ = U+160F (Canadian Syllabics WEST-CREE LWE)');
+    console.log('ᗢ = U+15E2 (Canadian Syllabics LAA)');
+    
+    // Timestamp-Analyse
+    const timestamp = 1572600969477;
+    const date = new Date(timestamp);
+    console.log('📅 Timestamp:', date.toISOString()); // 2019-11-01
+    
+    return {
+        original: decoded,
+        encoded: encoded,
+        unicodeChars: ['ᓚ', 'ᘏ', 'ᗢ'],
+        timestamp: timestamp
+    };
+}
+```
+
+### 🚨 Sicherheitsimplikationen
+
+- **Filename Injection**: Kann zu Path Traversal führen
+- **Parser Confusion**: Unicode kann Security-Filter umgehen
+- **Encoding Attacks**: Doppelte Enkodierung möglich
+- **Buffer Overflow**: Lange Dateinamen können Puffer überlasten
+
 ### 💡 Warum funktioniert das?
 - Die Anwendung prüft nur die Dateiendung (.pdf)
 - Der tatsächliche Dateiinhalt (MIME-Type) wird nicht validiert
 - Magic Bytes werden nicht überprüft
+- **Unicode-Filter fehlen**: Keine Normalisierung von Unicode-Zeichen
+- **URL-Decoding Schwächen**: Inkonsistente Behandlung von encodierten Strings
 
 ---
 
