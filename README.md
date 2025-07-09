@@ -17,7 +17,7 @@ Dieses Repository dokumentiert verschiedene Lösungswege für Sicherheitslücken
 ```
 Saftladen/
 ├── README.md                    # Diese Datei
-├── pwnd.md                      # Hauptdokumentation der Lösungswege
+├── PWND.md                      # Hauptdokumentation der Lösungswege
 └── ressources/                  # Zusätzliche Ressourcen
     ├── scripts/                 # Hilfsskripte für verschiedene Angriffe
     │   ├── fake_file_1_rename-extension.sh
@@ -80,7 +80,7 @@ Diese Dokumentation dient **ausschließlich Bildungszwecken**. Die hier gezeigte
    ```
 
 3. **Lösungswege studieren**: 
-   - Beginne mit `pwnd.md` für detaillierte Anleitungen
+   - Beginne mit `PWND.md` für detaillierte Anleitungen
    - Nutze die Scripts im `ressources/scripts/` Ordner
 
 ## 📖 Weiterführende Ressourcen
