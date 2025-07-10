@@ -1,6 +1,6 @@
 # 🧃 OWASP Juice Shop - Lösungswege
 
-![Juice Shop Logo](juicy-shop.png)
+![Juice Shop Logo](juice-shop-1.png)
 
 ## 📋 Übersicht
 

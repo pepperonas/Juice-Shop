@@ -1,5 +1,7 @@
 # 🔓 Juice Shop Exploits - Detaillierte Lösungswege
 
+![Juice Shop Exploits](juice-shop-2.png)
+
 ## 1. SQL Injection - Admin Login Bypass
 
 ### 📝 Beschreibung
