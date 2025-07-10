@@ -611,7 +611,210 @@ path:"web3-sandbox"
 
 ---
 
-## 5. File Upload Bypass - PDF Validation umgehen
+## 5. Kryptografische Schwachstellen - Inform the Shop Challenge
+
+### 📝 Beschreibung
+Diese Challenge verlangt die Identifikation unsicherer kryptografischer Algorithmen oder Libraries, die in der Juice Shop Anwendung verwendet werden.
+
+### 🎯 Aufgabe
+*"Inform the shop about an algorithm or library it should definitely not use the way it does"*
+
+### 🔍 Identifizierung unsicherer Kryptografie
+
+#### **Problem 1: MD5 für Passwort-Hashing**
+
+```javascript
+// JWT Token aus localStorage dekodieren
+const token = localStorage.getItem('token');
+const parts = token.split('.');
+const payload = JSON.parse(atob(parts[1]));
+
+// Passwort-Hash im JWT Token sichtbar
+console.log('User data:', payload.data);
+console.log('Password Hash:', payload.data.password); 
+// Beispiel: "10b43971a8295f3720f38fbcdd9d6ac6"
+```
+
+#### **Sicherheitsprobleme:**
+1. **MD5 ist kryptografisch gebrochen**: Anfällig für Rainbow Table Attacks
+2. **Zu schnell**: Milliarden von Hashes pro Sekunde berechenbar
+3. **Passwort-Hash im JWT**: Sensitive Daten gehören nicht in Tokens
+
+#### **MD5 Hash Cracking Demo**
+
+```javascript
+// Beispiel MD5 Hash aus JWT Token
+const md5Hash = "10b43971a8295f3720f38fbcdd9d6ac6";
+
+// Online MD5 Cracking Versuche
+console.log('🔓 Trying to crack MD5 hash:', md5Hash);
+
+// Häufige Passwort-Patterns für MD5
+const commonPasswords = [
+    'password', 'admin', '123456', 'test', 
+    'juice', 'shop', 'hallo123', 'demo'
+];
+
+// Simulation: MD5 Hashes können oft sofort geknackt werden
+// Der Hash "10b43971a8295f3720f38fbcdd9d6ac6" entspricht "hallo123"
+```
+
+#### **Online MD5 Cracking Tools**
+```bash
+# Websites für MD5 Lookup:
+# - https://crackstation.net/
+# - https://md5decrypt.net/
+# - https://hashes.com/en/decrypt/hash
+
+# Lokale Tools:
+echo "10b43971a8295f3720f38fbcdd9d6ac6" > hash.txt
+hashcat -m 0 -a 0 hash.txt rockyou.txt
+```
+
+### 🚨 Weitere mögliche kryptografische Schwachstellen
+
+#### **Problem 2: Base64 als "Verschlüsselung"**
+
+```javascript
+// Prüfe Cookie-Werte auf Base64 "Verschlüsselung"
+console.log('Cookies:', document.cookie);
+
+// Base64 ist KEINE Verschlüsselung, nur Encoding!
+const suspiciousValue = "YWRtaW46cGFzc3dvcmQ=";
+console.log('Decoded:', atob(suspiciousValue)); // "admin:password"
+```
+
+#### **Problem 3: JWT mit schwachem Secret**
+
+```javascript
+// Analyse der JWT Implementierung
+const jwtHeader = JSON.parse(atob(token.split('.')[0]));
+console.log('JWT Algorithm:', jwtHeader.alg);
+
+// Häufige Probleme:
+// - Schwache Secrets (z.B. "secret", "key", "jwt")
+// - Algorithm Confusion (RS256 vs HS256)
+// - None Algorithm akzeptiert
+```
+
+#### **Problem 4: ROT13/Caesar Cipher**
+
+```javascript
+// Suche nach ROT13 oder Caesar Cipher in der Anwendung
+function searchForWeakCrypto() {
+    fetch('http://localhost:3000/main.js')
+    .then(response => response.text())
+    .then(code => {
+        const cryptoPatterns = [
+            /rot13/gi,
+            /caesar/gi,
+            /shift.*cipher/gi,
+            /atob|btoa/gi  // Base64 Encoding/Decoding
+        ];
+        
+        cryptoPatterns.forEach(pattern => {
+            if (pattern.test(code)) {
+                console.log('🚨 Weak crypto found:', pattern);
+            }
+        });
+    });
+}
+```
+
+### 💡 Contact Us Lösung
+
+#### **Lösung der Challenge**
+
+```javascript
+// Gehe zum Contact Us Formular und sende eine der folgenden Nachrichten:
+
+// Option 1: MD5 Problem
+"The application uses MD5 for password hashing which is completely insecure. Please use bcrypt instead."
+
+// Option 2: Detailed MD5 Report
+"I noticed that the application uses MD5 for password hashing. The password hash is visible in the JWT token. MD5 is cryptographically broken and should never be used for passwords. Please use bcrypt, scrypt or Argon2 instead."
+
+// Option 3: Kurz und knapp
+"md5"
+
+// Option 4: Base64 Problem (falls MD5 nicht funktioniert)
+"Base64 encoding is used instead of proper encryption"
+
+// Option 5: JWT Secret Problem
+"JWT implementation uses weak/predictable secret"
+```
+
+### 🔍 Automatisierte Schwachstellen-Suche
+
+```javascript
+function findCryptoVulnerabilities() {
+    console.log('🔍 Searching for cryptographic vulnerabilities...');
+    
+    // 1. JWT Token Analysis
+    const token = localStorage.getItem('token');
+    if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.data && payload.data.password) {
+            const hash = payload.data.password;
+            if (hash.length === 32 && /^[a-f0-9]+$/.test(hash)) {
+                console.log('🚨 MD5 hash detected in JWT:', hash);
+                return 'MD5';
+            }
+        }
+    }
+    
+    // 2. Base64 Encoding Detection
+    const cookies = document.cookie;
+    const base64Pattern = /[A-Za-z0-9+/]{20,}={0,2}/g;
+    const matches = cookies.match(base64Pattern);
+    if (matches) {
+        console.log('🚨 Potential Base64 encoded data:', matches);
+        return 'Base64';
+    }
+    
+    // 3. Weak Algorithm Search
+    fetch('/main.js')
+    .then(response => response.text())
+    .then(code => {
+        if (/md5|sha1|rot13|caesar/gi.test(code)) {
+            console.log('🚨 Weak cryptographic algorithms found in source');
+            return 'WeakAlgorithm';
+        }
+    });
+}
+
+// Execute vulnerability scan
+findCryptoVulnerabilities();
+```
+
+### 🔒 Korrekte Implementierung
+
+#### **Sichere Alternativen:**
+
+```javascript
+// FALSCH (aktuell in Juice Shop):
+// - MD5 für Passwort-Hashing
+// - Passwort-Hash im JWT Token
+// - Base64 als "Verschlüsselung"
+
+// RICHTIG:
+// 1. Passwort-Hashing mit bcrypt/scrypt/Argon2
+// 2. Keine sensitiven Daten in JWT Tokens
+// 3. Echte Verschlüsselung statt Base64 Encoding
+// 4. Starke JWT Secrets oder asymmetrische Schlüssel
+```
+
+### 📊 Challenge Erfolg
+
+Die Challenge wird gelöst, sobald eine der identifizierten kryptografischen Schwachstellen über das Contact Us Formular gemeldet wird. Am häufigsten erfolgreich:
+
+1. **MD5 Hashing** - Meist die korrekte Antwort
+2. **Base64 "Encryption"** - Alternative
+3. **Weak JWT Implementation** - Seltener, aber möglich
+
+---
+
+## 6. File Upload Bypass - PDF Validation umgehen
 
 ### 📝 Beschreibung
 Die Juice Shop prüft bei File Uploads nur die Dateiendung, nicht den tatsächlichen Inhalt. Dies ermöglicht das Hochladen von beliebigen Dateien als PDFs.
