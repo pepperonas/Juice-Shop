@@ -584,6 +584,157 @@ console.log('Window object keys containing "ng" or "angular":',
     )
 );
 ```
+
+### 🔍 METHODE 9: Sandbox Route Discovery
+
+```javascript
+console.log('\n=== SANDBOX ROUTE DISCOVERY ===');
+
+// 1. Suche nach "sandbox" in main.js
+fetch('http://localhost:3000/main.js')
+.then(response => response.text())
+.then(code => {
+    console.log('🔍 Searching for sandbox patterns in main.js...');
+    
+    // Sandbox-spezifische Suchpatterns
+    const sandboxPatterns = [
+        /sandbox/gi,
+        /code-sandbox/gi,
+        /playground/gi,
+        /editor/gi,
+        /web3-sandbox/gi,
+        /path:\s*['"]sandbox['"]|path:\s*['"].*sandbox.*['"]/gi,
+        /path:\s*['"]editor['"]|path:\s*['"].*editor.*['"]/gi
+    ];
+    
+    sandboxPatterns.forEach((pattern, index) => {
+        const matches = code.match(pattern);
+        if (matches) {
+            console.log(`🎯 Sandbox Pattern ${index}:`, [...new Set(matches)]);
+        }
+    });
+    
+    // Suche nach spezifischen Route-Definitionen
+    const routePatterns = [
+        /path:\s*['"]code-sandbox['"]|path:\s*['"].*code-sandbox.*['"]/gi,
+        /path:\s*['"]playground['"]|path:\s*['"].*playground.*['"]/gi,
+        /path:\s*['"]editor['"]|path:\s*['"].*editor.*['"]/gi
+    ];
+    
+    routePatterns.forEach((pattern, index) => {
+        const matches = code.match(pattern);
+        if (matches) {
+            console.log(`🔍 Route Pattern ${index}:`, [...new Set(matches)]);
+        }
+    });
+});
+```
+
+### 🔍 METHODE 10: Manuelle Route-Tests für Sandbox/Editor
+
+```javascript
+console.log('\n=== MANUAL SANDBOX ROUTE TESTING ===');
+
+// Typische Sandbox/Editor-Routen
+const sandboxRoutes = [
+    '/#/code-sandbox',
+    '/#/sandbox',
+    '/#/playground', 
+    '/#/editor',
+    '/#/web3-sandbox',
+    '/#/code-editor',
+    '/#/dev-sandbox',
+    '/#/test-sandbox'
+];
+
+console.log('🧪 Test these sandbox routes manually:');
+sandboxRoutes.forEach(route => {
+    console.log(`🔗 http://localhost:3000${route}`);
+});
+
+// Automatisierte Tests (optional)
+function testSandboxRoutes() {
+    sandboxRoutes.forEach(async route => {
+        console.log(`🧪 Testing: ${route}`);
+        
+        // Navigiere zur Route
+        window.location.hash = route;
+        
+        // Warte kurz
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Prüfe ob Route funktioniert (kein 404)
+        const currentHash = window.location.hash;
+        if (currentHash === route) {
+            console.log(`✅ Route exists: ${route}`);
+        } else {
+            console.log(`❌ Route not found: ${route}`);
+        }
+    });
+}
+
+// Uncomment to run automated tests
+// testSandboxRoutes();
+```
+
+### 🔍 METHODE 11: Developer Tools Source Code Search
+
+```javascript
+console.log('\n=== DEVELOPER TOOLS SEARCH GUIDE ===');
+
+// Anleitung für manuelle Suche in Developer Tools
+console.log(`
+📋 Manual Search Steps:
+1. Öffne Developer Tools (F12)
+2. Gehe zu Sources Tab
+3. Finde main.js oder main-*.js
+4. Nutze Ctrl+F und suche nach:
+   - "sandbox"
+   - "code-sandbox"
+   - "playground"
+   - "editor"
+   - "web3-sandbox"
+
+🔍 What to look for:
+- path:"sandbox" 
+- path:"code-sandbox"
+- path:"playground"
+- path:"editor"
+- component: SandboxComponent
+- loadChildren: () => import('./sandbox/...
+`);
+
+// Automatisierte Quelle-Analyse
+function analyzeSourceFiles() {
+    console.log('🔍 Analyzing source files for sandbox references...');
+    
+    // Häufige JavaScript-Dateien durchsuchen
+    const jsFiles = [
+        'main.js',
+        'main-*.js',
+        'vendor.js',
+        'runtime.js',
+        'polyfills.js'
+    ];
+    
+    jsFiles.forEach(file => {
+        fetch(`http://localhost:3000/${file}`)
+        .then(response => response.text())
+        .then(content => {
+            const sandboxMatches = content.match(/sandbox|playground|editor/gi);
+            if (sandboxMatches) {
+                console.log(`📄 Found sandbox references in ${file}:`, sandboxMatches.length);
+            }
+        })
+        .catch(error => {
+            console.log(`❌ Could not load ${file}`);
+        });
+    });
+}
+
+// Führe die Analyse aus
+analyzeSourceFiles();
+```
 ### 📊 Ergebnisse der Route Discovery
 
 Die Ausführung der obigen Scripts lieferte folgende Ergebnisse:
@@ -600,6 +751,7 @@ path:"privacy-security"
 path:"data-export"
 path:"wallet-web3"
 path:"web3-sandbox"
+path:"editor"
 ```
 
 #### ✅ API Endpoints:
